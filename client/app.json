@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "GoHomey",
+    "slug": "GoHomey",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/logo.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#A993FF"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gohomey.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo.png",
+        "backgroundColor": "#A993FF"
+      },
+      "package": "com.gohomey.app",
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/logo.png"
+    },
+    "extra": {
+      "ORS_KEY": "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImNmNDUwZmNkMmNkNjQ2NTY4ODU2MDQwMDdhZTJhYWZiIiwiaCI6Im11cm11cjY0In0=",
+      "eas": {
+        "projectId": "ba2b0870-57b8-4838-96dc-913a70775ebd"
+      }
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          },
+          "android": {
+            "enableProguardInReleaseBuilds": true
+          }
+        }
+      ]
+    ]
+  }
+}
