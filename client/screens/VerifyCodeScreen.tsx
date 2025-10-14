@@ -73,8 +73,32 @@ export default function VerifyCodeScreen({ route }: any) {
       console.log("Email:", res.user.email);
       await AsyncStorage.setItem("token", res.token);
       console.log("Token saved to AsyncStorage:", res.token);
-      console.log("Navigating to Home screen");
-      navigation.navigate("Home");
+
+      // Fetch and save user's current location in database
+      try {
+        const Location = require("expo-location");
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === "granted") {
+          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+          const latitude = loc.coords.latitude;
+          const longitude = loc.coords.longitude;
+          const { updateCurrentLocationAPI } = require("../api/locationAPI");
+          await updateCurrentLocationAPI(res.token, latitude, longitude);
+          console.log("User location updated in backend.");
+        } else {
+          console.log("Location permission not granted.");
+        }
+      } catch (locErr) {
+        console.log("Error updating user location:", locErr);
+      }
+
+      if (res.user.role === "Driver") {
+        console.log("Navigating to DriverDashboard");
+        navigation.navigate("DriverDashboard");
+      } else {
+        console.log("Navigating to Home screen");
+        navigation.navigate("Home");
+      }
     } catch (error: any) {
       Alert.alert("Error", error.response?.data?.message || "Invalid OTP");
       console.log("Error:", error);
@@ -112,7 +136,7 @@ export default function VerifyCodeScreen({ route }: any) {
           {code.map((digit, index) => (
             <TextInput
               key={index}
-              ref={(ref) => (inputs.current[index] = ref)}
+              ref={(ref) => { inputs.current[index] = ref; }}
               style={styles.otpInput}
               keyboardType="number-pad"
               maxLength={1}

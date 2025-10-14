@@ -24,10 +24,7 @@ import {
   loadHomeLocation,
 } from "../store/locationSlice";
 
-type HomeScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "Home"
->;
+type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, "Home">;
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
@@ -87,10 +84,17 @@ export default function HomeScreen() {
 
     // Case 2: Home location exists → get current location and go to map
     try {
-      await dispatch(fetchCurrentLocation()).unwrap();
+      const rawLocation = await dispatch(fetchCurrentLocation()).unwrap();
+      // HomeLocationData expects latitude, longitude, address?, timestamp
+      const currentLocation = {
+        latitude: rawLocation.latitude,
+        longitude: rawLocation.longitude,
+        address: '',
+        timestamp: Date.now(),
+      };
       navigation.navigate("Map", {
-        // pass locations if MapScreen expects params
         homeLocation,
+        currentLocation,
       });
       console.log("Navigating to Map with homeLocation:", homeLocation);
     } catch (error) {

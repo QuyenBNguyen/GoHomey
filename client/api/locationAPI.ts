@@ -1,3 +1,4 @@
+
 // src/api/locationAPI.ts
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -5,12 +6,14 @@ import * as Location from "expo-location";
 import Constants from "expo-constants";
 
 const API_BASE =
-  (Constants?.manifest?.extra?.API_BASE as string) ||
+  ((Constants as any).expoConfig?.extra?.API_BASE as string) ||
+  ((Constants as any).manifest?.extra?.API_BASE as string) ||
   (process.env.API_BASE as string) ||
-  "http://10.12.49.53:5000";
+  "http://192.168.5.107:5000";
 
 const ORS_KEY =
-  (Constants?.manifest?.extra?.ORS_KEY as string) ||
+  ((Constants as any).expoConfig?.extra?.ORS_KEY as string) ||
+  ((Constants as any).manifest?.extra?.ORS_KEY as string) ||
   (process.env.ORS_KEY as string) ||
   "";
 
@@ -109,6 +112,17 @@ export async function fetchCurrentLocationAPI(): Promise<Coordinates> {
 
   const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
   return { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+}
+
+// Update current location for any user (after login)
+export async function updateCurrentLocationAPI(token: string, latitude: number, longitude: number) {
+  const body = { lat: latitude, lng: longitude };
+  const res = await axios.put(`${API_BASE}/user-details/current-location`, body, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data;
 }
 
 export async function fetchRouteAPI(start: Coordinates, end: Coordinates): Promise<RouteData> {

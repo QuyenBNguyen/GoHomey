@@ -1,9 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
-import { useSelector, useDispatch } from "react-redux";
-import { RootState, AppDispatch } from "../store/store";
-import { fetchRoute } from "../store/locationSlice";
+import { fetchRouteAPI, RouteData } from "../api/locationAPI";
 
 interface MapSectionProps {
   currentLocation: { latitude: number; longitude: number };
@@ -11,37 +9,21 @@ interface MapSectionProps {
 }
 
 export default function MapSection({ currentLocation, homeLocation }: MapSectionProps) {
-  const dispatch = useDispatch<AppDispatch>();
+  const [routeToHome, setRouteToHome] = useState<RouteData | null>(null);
 
-  const {
-    driverLocation,
-    routeDriverToCustomer,
-    routeCustomerToHome,
-  } = useSelector((state: RootState) => state.location);
-
-  // 🔹 When we have driver + customer, fetch driver→customer route
+  // Fetch route from current location to home
   useEffect(() => {
-    if (driverLocation && currentLocation) {
-      dispatch(
-        fetchRoute({
-          start: driverLocation,
-          end: currentLocation,
-          type: "driverToCustomer",
-        })
-      );
-    }
-  }, [driverLocation, currentLocation]);
+    const loadRoute = async () => {
+      try {
+        const route = await fetchRouteAPI(currentLocation, homeLocation);
+        setRouteToHome(route);
+      } catch (error) {
+        console.error("Failed to load route:", error);
+      }
+    };
 
-  // 🔹 When we have customer + home, fetch customer→home route
-  useEffect(() => {
     if (currentLocation && homeLocation) {
-      dispatch(
-        fetchRoute({
-          start: currentLocation,
-          end: homeLocation,
-          type: "customerToHome",
-        })
-      );
+      loadRoute();
     }
   }, [currentLocation, homeLocation]);
 
@@ -53,7 +35,7 @@ export default function MapSection({ currentLocation, homeLocation }: MapSection
     longitudeDelta: 0.05,
   };
 
-  const center = currentLocation || homeLocation || driverLocation || defaultRegion;
+  const center = currentLocation || homeLocation || defaultRegion;
 
   return (
     <MapView
@@ -65,10 +47,6 @@ export default function MapSection({ currentLocation, homeLocation }: MapSection
         longitudeDelta: 0.05,
       }}
     >
-      {/* Driver marker */}
-      {driverLocation && (
-        <Marker coordinate={driverLocation} title="Driver" pinColor="green" />
-      )}
 
       {/* Customer marker */}
       {currentLocation && (
@@ -87,23 +65,14 @@ export default function MapSection({ currentLocation, homeLocation }: MapSection
         />
       )}
 
-      {/* Driver → Customer route */}
-      {routeDriverToCustomer?.coordinates && (
-        <Polyline
-          coordinates={routeDriverToCustomer.coordinates}
-          strokeWidth={4}
-          strokeColor="black"
-        />
-      )}
-
-      {/* Customer → Home route */}
-      {routeCustomerToHome?.coordinates && (
-        <Polyline
-          coordinates={routeCustomerToHome.coordinates}
-          strokeWidth={4}
-          strokeColor="blue"
-        />
-      )}
+        {/* Route from current location to home */}
+        {routeToHome?.coordinates && (
+          <Polyline
+            coordinates={routeToHome.coordinates}
+            strokeWidth={4}
+            strokeColor="blue"
+          />
+        )}
     </MapView>
   );
 }

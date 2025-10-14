@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
+
 const userSchema = new mongoose.Schema({
   firstName: { type: String, required: true, trim: true },
   lastName: { type: String, required: true, trim: true },
@@ -10,8 +11,9 @@ const userSchema = new mongoose.Schema({
   email: { type: String, unique: true, required: true, lowercase: true, trim: true },
   password: { type: String }, // hashed password
   role: { type: String, enum: ["Customer", "Driver", "Admin"], default: "Customer" },
-  status: { type: String, enum: ["Active", "Blocked", "Pending"], default: "Active" }
+  status: { type: String, enum: ["Active", "Blocked", "Pending"], default: "Active" },
 }, { timestamps: true });
+
 
 // Hash password automatically when set/modified
 userSchema.pre("save", async function (next) {

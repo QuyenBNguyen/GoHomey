@@ -1,45 +1,70 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { View, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useSelector, useDispatch } from "react-redux";
-import { RootState, AppDispatch } from "../store/store";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { NativeStackNavigationProp, NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/navigation";
-import { fetchCurrentLocation } from "../store/locationSlice";
 
 import MapSection from "../components/MapSection";
 import VehicleOptions from "../components/VehicleOptions";
+import { createRide, findNearbyDrivers } from "../api/rideApi";
 
-type MapScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "Map"
->;
+
+
+type MapScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, "Map">;
+type MapScreenRouteProp = NativeStackScreenProps<RootStackParamList, "Map">["route"];
 
 export default function MapScreen() {
   const navigation = useNavigation<MapScreenNavigationProp>();
-  const dispatch = useDispatch<AppDispatch>();
+  const route = useRoute<MapScreenRouteProp>();
+  // Get token from Redux
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { useSelector } = require("react-redux");
+  const token = useSelector((state: any) => state.auth.token);
 
-  const { currentLocation, homeLocation } = useSelector(
-    (state: RootState) => state.location
-  );
+  // Get locations from navigation params (passed from HomeScreen)
+  const { homeLocation, currentLocation } = route.params;
 
-  // 🔹 Fetch customer’s live location when screen mounts
-  useEffect(() => {
-    dispatch(fetchCurrentLocation());
-  }, [dispatch]);
+  // Convert to lat/lng format for API calls
+  const pickup = {
+    lat: currentLocation.latitude,
+    lng: currentLocation.longitude,
+  };
 
-  // Fallback coords in case nothing available yet
-  const defaultCurrentLocation = { latitude: 16.054407, longitude: 108.202164 };
-const defaultHomeLocation = { latitude: 16.054407, longitude: 108.202164 };
+  const dropoff = {
+    lat: homeLocation.latitude,
+    lng: homeLocation.longitude,
+  };
 
-  const currentLoc = currentLocation || defaultCurrentLocation;
-  const homeLoc = homeLocation || defaultHomeLocation;
+  const handleConfirm = async (vehicle: string | null, price?: number) => {
+    if (!vehicle) return;
 
-  const handleConfirm = (vehicle: string | null) => {
-    if (vehicle) {
-      console.log("User selected:", vehicle);
-      navigation.navigate("FindingDriver");
+    // Find the selected vehicleTypeId from priceCalculations (passed as prop or fetched in VehicleOptions)
+    // For now, let's assume VehicleOptions can pass vehicleTypeId as the vehicle string (or you can refactor to pass the id)
+
+    // You may want to refactor VehicleOptions to pass vehicleTypeId instead of type string for reliability
+
+    // For demo, let's fetch vehicle types and match
+    try {
+      // Fetch all vehicle types
+      const vehicleTypes = await import("../api/rideApi").then(m => m.getVehicleTypes());
+      const selectedType = vehicleTypes.find(v => v.type.toLowerCase() === vehicle);
+      if (!selectedType) throw new Error("Vehicle type not found");
+
+      // Create ride request with token
+      const ride = await createRide(pickup, dropoff, selectedType._id, token);
+      console.log("Ride created:", ride);
+
+      // Fetch all available drivers nearby with same vehicle type
+      const { getNearbyDriversByType } = await import("../api/driverApi");
+  const drivers = await getNearbyDriversByType(pickup.lat, pickup.lng, selectedType._id, token, 3);
+      console.log("Matched drivers:", drivers);
+
+      // Navigate to FindingDriver screen (pass ride and drivers if needed)
+  navigation.navigate("FindingDriver", { rideId: ride.ride?._id || ride._id, drivers, pickup, vehicleTypeId: selectedType._id });
+    } catch (err) {
+      console.error("Error confirming ride:", err);
+      // Optionally show error to user
     }
   };
 
@@ -47,15 +72,25 @@ const defaultHomeLocation = { latitude: 16.054407, longitude: 108.202164 };
     <SafeAreaView style={{ flex: 1 }} edges={["top", "left", "right"]}>
       <View style={styles.container}>
         {/* Map */}
-        <MapSection currentLocation={currentLoc}
-  homeLocation={homeLoc}/>
+        <MapSection 
+          currentLocation={currentLocation}
+          homeLocation={homeLocation}
+        />
 
         {/* Vehicle Options */}
-        <VehicleOptions onConfirm={handleConfirm} distance="5.2 km" />
+        <VehicleOptions 
+          onConfirm={handleConfirm}
+          distance={0} // Will be calculated by the component
+          duration={0} // Will be calculated by the component
+          formattedDistance="Calculating..." // Will be updated by the component
+          pickup={pickup}
+          dropoff={dropoff}
+        />
       </View>
     </SafeAreaView>
   );
-}
+};
+
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

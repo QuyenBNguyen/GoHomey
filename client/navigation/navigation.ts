@@ -2,16 +2,18 @@ import { HomeLocationData } from "./../api/locationAPI";
 export type RootStackParamList = {
   Login: undefined;
   EmailLogin: undefined;
-  Register: {email: string; password:string }; // added Register route
+  Register: {email: string; password:string };
   PhoneLogin: undefined;
   Home: undefined;
-  VerifyCode: { email: string , password?: string}; // added password param
-  Map: {homeLocation: HomeLocationData}; // ✅ expect homeLocation param
-  HomeLocationSetup:undefined;
+  VerifyCode: { email: string , password?: string};
+  Map: {homeLocation: HomeLocationData, currentLocation: HomeLocationData};
+  HomeLocationSetup: undefined;
   Profile: undefined;
   Settings: undefined;
-  DriverFound: undefined;
-  FindingDriver: undefined;
+  DriverFound: { ride?: any; driver?: any } | undefined;
+  FindingDriver: { rideId?: any; drivers?: any[]; pickup?: { lat: number; lng: number }; vehicleTypeId?: string } | undefined;
   DriverDashboard: undefined;
+  RideRequests: undefined;
+  DriverDrawer: undefined;
   Splash: undefined;
 };

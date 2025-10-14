@@ -1,38 +1,168 @@
-// src/api/rideApi.ts
-import axios from "axios";
-const process.env.API_BASE = "http://192.168.5.107:5000/rides"; 
+import Constants from "expo-constants";
 
-export const getRides = async (token: string) => {
-  const response = await axios.get(`${process.env.API_BASE}/rides`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
-};
+const extras =
+  (Constants as any).expoConfig?.extra ||
+  (Constants as any).manifest?.extra ||
+  undefined;
 
-export const createRide = async (rideData: any, token: string) => {
-  const response = await axios.post(`${process.env.API_BASE}/rides`, rideData, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
-};
+const API_BASE =
+  (extras?.API_BASE as string) ||
+  (process.env?.API_BASE as string) ||
+  "http://192.168.5.107:5000";
 
-export const getRideById = async (rideId: string, token: string) => {
-  const response = await axios.get(`${process.env.API_BASE}/rides/${rideId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
-};
+export interface VehicleType {
+  _id: string;
+  type: "Car" | "Motorbike";
+  baseFare: number;
+  pricePerKm: number;
+  pricePerMinute: number;
+  surgeMultiplier: number;
+}
 
-export const updateRide = async (rideId: string, updateData: any, token: string) => {
-  const response = await axios.put(`${process.env.API_BASE}/rides/${rideId}`, updateData, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
-};
+export interface PriceCalculation {
+  vehicleType: VehicleType;
+  totalPrice: number;
+  route?: {
+    distance: number;
+    duration: number;
+  };
+  breakdown: {
+    baseFare: number;
+    distanceCost: number;
+    timeCost: number;
+    surgeMultiplier: number;
+  };
+}
 
-export const deleteRide = async (rideId: string, token: string) => {
-  const response = await axios.delete(`${process.env.API_BASE}/rides/${rideId}`, {
-    headers: { Authorization: `Bearer ${token}` },
+// Get all vehicle types
+export async function getVehicleTypes(): Promise<VehicleType[]> {
+  const res = await fetch(`${API_BASE}/rides/vehicle-types`);
+  if (!res.ok) throw new Error("Failed to fetch vehicle types");
+  return res.json();
+}
+
+// Get price estimate for route
+export async function getPriceEstimate(
+  pickup: { lat: number; lng: number },
+  dropoff: { lat: number; lng: number }
+): Promise<PriceCalculation[]> {
+  const body = {
+    pickup,
+    dropoff
+  };
+  const res = await fetch(`${API_BASE}/rides/estimate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
   });
-  return response.data;
-};
+  if (!res.ok) throw new Error("Failed to get price estimate");
+  return res.json();
+}
+
+// Create Ride Request
+export async function createRide(
+  pickup: { lat: number; lng: number; address?: string },
+  dropoff: { lat: number; lng: number; address?: string },
+  vehicleTypeId: string,
+  token: string
+): Promise<any> {
+  const body = { pickup, dropoff, vehicleTypeId };
+  const res = await fetch(`${API_BASE}/rides`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error("Failed to create ride");
+  return res.json();
+}
+
+// Get Ride by ID
+export async function getRide(id: string, token: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/rides/${id}`, {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error("Failed to fetch ride");
+  return res.json();
+}
+
+// Update Ride Status
+export async function updateRideStatus(id: string, status: string, driverId?: string, vehicleId?: string, token?: string): Promise<any> {
+  const body: any = { status };
+  if (driverId) body.driverId = driverId;
+  if (vehicleId) body.vehicleId = vehicleId;
+  const res = await fetch(`${API_BASE}/rides/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error("Failed to update ride status");
+  return res.json();
+}
+
+// Delete Ride
+export async function deleteRide(id: string, token: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/rides/${id}`, {
+    method: "DELETE",
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error("Failed to delete ride");
+  return res.json();
+}
+
+// Find Nearby Drivers
+export async function findNearbyDrivers(pickup: { lat: number; lng: number }, token: string): Promise<any[]> {
+  const body = { pickup };
+  const res = await fetch(`${API_BASE}/rides/find-drivers`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error("Failed to find nearby drivers");
+  return res.json();
+}
+
+// Track Driver
+export async function trackDriver(rideId: string, token: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/rides/${rideId}/track-driver`, {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error("Failed to track driver");
+  return res.json();
+}
+
+// Track Route
+export async function trackRoute(rideId: string, token: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/rides/${rideId}/track-route`, {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error("Failed to track route");
+  return res.json();
+}
+
+// Accept a ride (atomic)
+export async function acceptRide(rideId: string, driverId: string, token: string, vehicleId?: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/rides/${rideId}/accept`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify({ driverId, ...(vehicleId ? { vehicleId } : {}) })
+  });
+  if (res.status === 409) {
+    throw new Error("Ride already accepted by another driver");
+  }
+  if (!res.ok) throw new Error("Failed to accept ride");
+  return res.json();
+}

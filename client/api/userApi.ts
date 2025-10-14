@@ -1,22 +1,33 @@
 // src/api/userApi.ts
 import axios from "axios";
+import Constants from "expo-constants";
+
+const extras =
+  (Constants as any).expoConfig?.extra ||
+  (Constants as any).manifest?.extra ||
+  undefined;
+
+const API_BASE =
+  (extras?.API_BASE as string) ||
+  (process.env?.API_BASE as string) ||
+  "http://192.168.5.107:5000";
 
 export const getUserProfile = async (token: string) => {
-  const response = await axios.get(`${process.env.API_BASE}/users/profile`, {
+  const response = await axios.get(`${API_BASE}/users/profile`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
 export const updateUserProfile = async (profileData: any, token: string) => {
-  const response = await axios.put(`${process.env.API_BASE}/users/profile`, profileData, {
+  const response = await axios.put(`${API_BASE}/users/profile`, profileData, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
 export const getUserById = async (userId: string, token: string) => {
-  const response = await axios.get(`${process.env.API_BASE}/users/${userId}`, {
+  const response = await axios.get(`${API_BASE}/users/${userId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
