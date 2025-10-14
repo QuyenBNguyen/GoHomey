@@ -47,7 +47,6 @@ exports.getPriceEstimate = async (req, res) => {
       };
     });
     res.json(calculations);
-    console.log(calculations);
   } catch (err) {
     res.status(500).json({ message: "Error getting price estimate", error: err.message });
   }
