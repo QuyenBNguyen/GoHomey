@@ -3,16 +3,16 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 
-// Resolve runtime config from both manifest and expoConfig (EAS)
+// Resolve runtime config preferring expoConfig.extra (EAS), then manifest.extra
 const extras =
-  (Constants as any).manifest?.extra ||
   (Constants as any).expoConfig?.extra ||
+  (Constants as any).manifest?.extra ||
   undefined;
 
 const API_BASE =
   (extras?.API_BASE as string) ||
   (process.env?.API_BASE as string) ||
-  "http://10.12.49.1:5000"; // <-- change to your dev server IP if needed
+  "http://192.168.5.107:5000"; // fallback only; prefer client/.env via app.config.js
 
 // create axios instance with timeout so client fails fast instead of hanging
 const api = axios.create({

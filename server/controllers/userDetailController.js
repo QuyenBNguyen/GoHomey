@@ -46,3 +46,25 @@ exports.getHomeLocation = async (req, res) => {
     res.status(500).json({ message: "Error fetching home location" });
   }
 };
+
+exports.setCurrentLocation = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { lat, lng } = req.body;
+    const latNum = Number(lat);
+    const lngNum = Number(lng);
+    if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
+      return res.status(400).json({ message: "Latitude and longitude required" });
+    }
+    const currentLocation = { type: "Point", coordinates: [lngNum, latNum] };
+    const detail = await UserDetail.findOneAndUpdate(
+      { userId },
+      { currentLocation },
+      { new: true, upsert: true }
+    );
+    res.json({ message: "Current location updated", detail });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error setting current location" });
+  }
+};

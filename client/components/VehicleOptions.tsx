@@ -1,49 +1,124 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { PriceCalculation, getVehicleTypes, getPriceEstimate } from "../api/rideApi";
 
 interface VehicleOptionsProps {
-  onConfirm: (vehicle: string | null) => void;
-  distance: string;
+  onConfirm: (vehicle: string | null, price?: number) => void;
+  distance: number; // in km
+  duration: number; // in minutes
+  formattedDistance: string; // for display
+  pickup: { lat: number; lng: number };
+  dropoff: { lat: number; lng: number };
 }
 
-export default function VehicleOptions({ onConfirm, distance }: VehicleOptionsProps) {
+export default function VehicleOptions({ onConfirm, distance, duration, formattedDistance, pickup, dropoff }: VehicleOptionsProps) {
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
+  const [priceCalculations, setPriceCalculations] = useState<PriceCalculation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+    const [calculatedDistance, setCalculatedDistance] = useState<string>("Calculating...");
+    const [calculatedDuration, setCalculatedDuration] = useState<number>(0);
+
+  useEffect(() => {
+    loadPrices();
+  }, [pickup, dropoff]);
+
+  const loadPrices = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      // Use actual pickup/dropoff for price estimation
+      const calculations = await getPriceEstimate(pickup, dropoff);
+      setPriceCalculations(calculations);
+      
+        // Extract distance and duration from the first calculation's route
+        if (calculations.length > 0 && calculations[0].route) {
+          const route = calculations[0].route;
+          setCalculatedDistance(`${route.distance.toFixed(1)} km`);
+          setCalculatedDuration(route.duration);
+        }
+    } catch (err) {
+      console.error("Error loading prices:", err);
+      setError("Failed to load prices");
+      setPriceCalculations([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('vi-VN').format(price) + " VND";
+  };
+
+  const getSelectedPrice = () => {
+    if (!selectedVehicle) return undefined;
+    const calculation = priceCalculations.find(calc => 
+      calc.vehicleType.type.toLowerCase() === selectedVehicle
+    );
+    return calculation?.totalPrice;
+  };
+
+  const handleConfirm = () => {
+    const price = getSelectedPrice();
+    onConfirm(selectedVehicle, price);
+  };
 
   return (
     <View style={styles.container}>
       {/* Distance Info */}
       <Text style={styles.distanceText}>Current Location → Home</Text>
-      <Text style={styles.subText}>Distance: ~{distance}</Text>
+    <Text style={styles.subText}>Distance: ~{calculatedDistance}</Text>
 
       <Text style={styles.title}>Choose your vehicle</Text>
 
-      {/* Motorcycle Option */}
-      <TouchableOpacity
-        style={[styles.option, selectedVehicle === "bike" && styles.selected]}
-        onPress={() => setSelectedVehicle("bike")}
-      >
-        <Ionicons name="bicycle" size={28} color="#000" />
-        <Text style={styles.optionText}>Motorcycle</Text>
-        <Text style={styles.price}>25.000 VND</Text>
-      </TouchableOpacity>
-
-      {/* Car Option */}
-      <TouchableOpacity
-        style={[styles.option, selectedVehicle === "car" && styles.selected]}
-        onPress={() => setSelectedVehicle("car")}
-      >
-        <Ionicons name="car" size={28} color="#000" />
-        <Text style={styles.optionText}>Car</Text>
-        <Text style={styles.price}>50.000 VND</Text>
-      </TouchableOpacity>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#A77AF3" />
+          <Text style={styles.loadingText}>Loading prices...</Text>
+        </View>
+      ) : error ? (
+        <Text style={styles.errorText}>{error}</Text>
+      ) : (
+        <>
+          {priceCalculations.map((calculation) => {
+            const vehicleKey = calculation.vehicleType.type.toLowerCase();
+            const isSelected = selectedVehicle === vehicleKey;
+            return (
+              <TouchableOpacity
+                key={calculation.vehicleType._id}
+                style={[styles.option, isSelected && styles.selected]}
+                onPress={() => setSelectedVehicle(vehicleKey)}
+              >
+                <Ionicons 
+                  name={calculation.vehicleType.type === "Car" ? "car" : "bicycle"} 
+                  size={28} 
+                  color="#000" 
+                />
+                <View style={styles.optionContent}>
+                  <Text style={styles.optionText}>{calculation.vehicleType.type}</Text>
+                  <Text style={styles.breakdown}>
+                    Base: {formatPrice(calculation.breakdown.baseFare)} • 
+                    Distance: {formatPrice(calculation.breakdown.distanceCost)} • 
+                    Time: {formatPrice(calculation.breakdown.timeCost)}
+                  </Text>
+                </View>
+                <Text style={styles.price}>{formatPrice(calculation.totalPrice)}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </>
+      )}
 
       {/* Confirm Button */}
       <TouchableOpacity
-        style={styles.confirmBtn}
-        onPress={() => onConfirm(selectedVehicle)}
+        style={[styles.confirmBtn, !selectedVehicle && styles.confirmBtnDisabled]}
+        onPress={handleConfirm}
+        disabled={!selectedVehicle}
       >
-        <Text style={styles.confirmText}>Confirm</Text>
+        <Text style={styles.confirmText}>
+          {selectedVehicle ? `Confirm - ${formatPrice(getSelectedPrice() || 0)}` : "Select a vehicle"}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -69,10 +144,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 12,
   },
+  loadingContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    color: "#666",
+    fontSize: 14,
+  },
+  errorText: {
+    color: "#FF4444",
+    textAlign: "center",
+    paddingVertical: 20,
+    fontSize: 14,
+  },
   option: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     backgroundColor: "#f8f8f8",
     padding: 14,
     borderRadius: 12,
@@ -83,8 +173,25 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     backgroundColor: "#EDE3FF",
   },
-  optionText: { flex: 1, marginLeft: 12, fontWeight: "600" },
-  price: { color: "#555" },
+  optionContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  optionText: { 
+    fontWeight: "600",
+    fontSize: 16,
+    marginBottom: 2,
+  },
+  breakdown: {
+    fontSize: 12,
+    color: "#666",
+    lineHeight: 16,
+  },
+  price: { 
+    color: "#333",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
   confirmBtn: {
     backgroundColor: "#A77AF3",
     padding: 16,
@@ -92,5 +199,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-  confirmText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  confirmBtnDisabled: {
+    backgroundColor: "#ccc",
+  },
+  confirmText: { 
+    color: "#fff", 
+    fontWeight: "bold", 
+    fontSize: 16 
+  },
 });

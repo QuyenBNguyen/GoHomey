@@ -8,33 +8,43 @@ const bcrypt = require("bcrypt");
 // Temporary store for OTPs (better: Redis or DB)
 let otpStore = {};
 
-// Configure nodemailer (explicit SMTP + timeouts)
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true, // use TLS
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  // prevent very long hangs
-  connectionTimeout: 10000, // 10s
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-  tls: {
-    // set to false if you have issues with certificates in dev
-    rejectUnauthorized: true,
-  },
-});
+// Email transport enabled only when credentials exist
+const EMAIL_ENABLED = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+
+// Configure nodemailer (explicit SMTP + timeouts) only if enabled
+let transporter;
+if (EMAIL_ENABLED) {
+  transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true, // use TLS
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+    // prevent very long hangs
+    connectionTimeout: 10000, // 10s
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
+    tls: {
+      // set to false if you have issues with certificates in dev
+      rejectUnauthorized: true,
+    },
+  });
+}
 
 // Verify transporter once at startup so misconfiguration is visible early
-transporter.verify((err, success) => {
-  if (err) {
-    console.error("Nodemailer verify failed:", err.message || err);
-  } else {
-    console.log("Nodemailer ready to send messages");
-  }
-});
+if (EMAIL_ENABLED && transporter) {
+  transporter.verify((err, success) => {
+    if (err) {
+      console.error("Nodemailer verify failed:", err.message || err);
+    } else {
+      console.log("Nodemailer ready to send messages");
+    }
+  });
+} else {
+  console.log("Email transport disabled (no EMAIL_USER/PASS). OTPs will be logged to console in dev.");
+}
 
 // Generate 6-digit OTP
 function generateOtp() {
@@ -43,6 +53,11 @@ function generateOtp() {
 
 // Send OTP email with timeout and better logging
 async function sendOtpEmail(email, otp) {
+  if (!EMAIL_ENABLED || !transporter) {
+    console.log(`DEV MODE: OTP for ${email} is ${otp} (email not sent)`);
+    return { dev: true };
+  }
+
   const mailOptions = {
     from: `"GoHomey" <${process.env.EMAIL_USER}>`,
     to: email,
@@ -58,13 +73,13 @@ async function sendOtpEmail(email, otp) {
     setTimeout(() => reject(new Error("SMTP send timeout")), timeoutMs)
   );
 
-  console.log(`Sending OTP to ${email} (timeout ${timeoutMs}ms)`);
+  console.log(`\nSending OTP to ${email} (timeout ${timeoutMs}ms)`);
   try {
     const info = await Promise.race([sendPromise, timeoutPromise]);
-    console.log("OTP email sent:", info?.messageId || "(no messageId)");
+    console.log("\nOTP email sent:", info?.messageId || "(no messageId)");
     return info;
   } catch (err) {
-    console.error("Failed to send OTP email:", err.message || err);
+    console.error("\nFailed to send OTP email:", err.message || err);
     throw err;
   }
 }
@@ -145,9 +160,10 @@ exports.requestOtp = async (req, res) => {
 
     try {
       await sendOtpEmail(email, otp);
+      console.log(`\nOTP sent to ${email}`);
       return res.json({ message: "OTP sent to email" });
     } catch (mailErr) {
-      console.error("requestOtp: sendOtpEmail error:", mailErr.message || mailErr);
+      console.error("\nrequestOtp: sendOtpEmail error:", mailErr.message || mailErr);
       return res.status(502).json({ message: "Failed to send OTP email. Try again later." });
     }
   } catch (err) {
@@ -199,7 +215,7 @@ exports.verifyOtpAndLogin = async (req, res) => {
       },
     });
 
-    console.log("User logged in:", user.email);
+    console.log("\nUser logged in:", user.email);
     console.log("UserID:", user._id);
     console.log("User role:", user.role);
   } catch (err) {

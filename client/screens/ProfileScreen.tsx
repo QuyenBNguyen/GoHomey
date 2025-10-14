@@ -22,6 +22,7 @@ import AppHeader from "../components/AppHeader";
 
 export default function ProfileScreen() {
   const auth = useSelector((state: RootState) => state.auth);
+  const driver = useSelector((state: RootState) => state.driver);
   const token = auth?.token;
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, "Profile">>();
 
@@ -118,9 +119,9 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <AppHeader onBack={() => navigation.goBack()} showBack={true} title="Profile" />
+  <AppHeader onBack={() => navigation.goBack()} showBack={true} title="Profile" />
 
-      <View style={styles.form}>
+  <View style={styles.form}>
         <Text style={styles.label}>First name</Text>
         <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} />
 
@@ -180,6 +181,37 @@ export default function ProfileScreen() {
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
           <Text style={styles.saveText}>{saving ? "Saving..." : "Save"}</Text>
         </TouchableOpacity>
+
+        {/* Driver vehicle info */}
+        {auth.user?.role === "Driver" && detail?.vehicles && (
+          <View style={styles.vehicleSection}>
+            <Text style={styles.vehicleSectionTitle}>Vehicle Information</Text>
+            {detail.vehicles.length === 0 ? (
+              <Text style={styles.vehicleEmpty}>No vehicle info available.</Text>
+            ) : (
+              detail.vehicles.map((v: any, idx: number) => (
+                <View key={v._id || idx} style={styles.vehicleCard}>
+                  <View style={styles.vehicleRow}>
+                    <Ionicons name="car-outline" size={22} color="#6C63FF" style={{ marginRight: 8 }} />
+                    <Text style={styles.vehicleText}><Text style={styles.vehicleLabel}>Type:</Text> {v.type}</Text>
+                  </View>
+                  <View style={styles.vehicleRow}>
+                    <Ionicons name="color-palette-outline" size={20} color="#6C63FF" style={{ marginRight: 8 }} />
+                    <Text style={styles.vehicleText}><Text style={styles.vehicleLabel}>Color:</Text> {v.color}</Text>
+                  </View>
+                  <View style={styles.vehicleRow}>
+                    <Ionicons name="card-outline" size={20} color="#6C63FF" style={{ marginRight: 8 }} />
+                    <Text style={styles.vehicleText}><Text style={styles.vehicleLabel}>License:</Text> {v.license}</Text>
+                  </View>
+                  <View style={styles.vehicleRow}>
+                    <Ionicons name="pricetag-outline" size={20} color="#6C63FF" style={{ marginRight: 8 }} />
+                    <Text style={styles.vehicleText}><Text style={styles.vehicleLabel}>Plate:</Text> {v.plate}</Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -210,4 +242,53 @@ const styles = StyleSheet.create({
   readOnlyRow: { marginTop: 12, paddingVertical: 8, borderTopWidth: 1, borderTopColor: "#f2f2f2" },
   readOnlyLabel: { fontSize: 13, color: "#666" },
   readOnlyValue: { fontSize: 14, fontWeight: "600", marginTop: 4 },
+  vehicleSection: {
+    marginTop: 32,
+    marginBottom: 8,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 10,
+    shadowColor: "#A993FF",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  vehicleSectionTitle: {
+    fontSize: 17,
+    fontWeight: "bold",
+    color: "#4A3AFF",
+    marginBottom: 10,
+    marginLeft: 2,
+  },
+  vehicleCard: {
+    backgroundColor: "#F3F0FF",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: "#A993FF",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  vehicleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  vehicleLabel: {
+    fontWeight: "bold",
+    color: "#6C63FF",
+  },
+  vehicleText: {
+    fontSize: 15,
+    color: "#222",
+  },
+  vehicleEmpty: {
+    color: "#888",
+    fontStyle: "italic",
+    marginBottom: 8,
+    marginLeft: 2,
+  },
 });
