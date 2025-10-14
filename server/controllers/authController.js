@@ -161,7 +161,6 @@ exports.requestOtp = async (req, res) => {
     try {
       await sendOtpEmail(email, otp);
       console.log(`\nOTP sent to ${email}`);
-      console.log("Generated OTP:", otp); // For debugging; remove in production
       return res.json({ message: "OTP sent to email" });
     } catch (mailErr) {
       console.error("\nrequestOtp: sendOtpEmail error:", mailErr.message || mailErr);
