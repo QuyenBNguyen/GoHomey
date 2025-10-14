@@ -451,7 +451,7 @@ exports.getAvailableRideRequests = async (req, res) => {
     if (!driver) return res.status(404).json({ message: "Driver not found" });
 
     // Find driver's available vehicle types
-    const vehicles = await Vehicle.find({ ownerId: driverId, status: "Available" }).select("vehicleTypeId");
+    const vehicles = await Vehicle.find({ owner: driverId, status: "Available" }).select("vehicleTypeId");
     const vehicleTypeIds = vehicles.map(v => v.vehicleTypeId);
     if (vehicleTypeIds.length === 0) {
       return res.json([]);
