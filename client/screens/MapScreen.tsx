@@ -89,7 +89,7 @@ export default function MapScreen() {
       </View>
     </SafeAreaView>
   );
-};
+}
 
 
 const styles = StyleSheet.create({
