@@ -150,6 +150,15 @@ export async function trackRoute(rideId: string, token: string): Promise<any> {
   return res.json();
 }
 
+// Track Customer (for driver to see customer movement)
+export async function trackCustomer(rideId: string, token: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/rides/${rideId}/track-customer`, {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error("Failed to track customer");
+  return res.json();
+}
+
 // Accept a ride (atomic)
 export async function acceptRide(rideId: string, driverId: string, token: string, vehicleId?: string): Promise<any> {
   const res = await fetch(`${API_BASE}/rides/${rideId}/accept`, {

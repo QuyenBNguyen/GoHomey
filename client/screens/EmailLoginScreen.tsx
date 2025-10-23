@@ -13,6 +13,7 @@ import { RootStackParamList } from "../navigation/navigation";
 import { useNavigation } from "@react-navigation/native";
 import { requestOtp } from "../api/authApi"; // ✅ import backend call
 import AppHeader from "../components/AppHeader";
+import { Ionicons } from "@expo/vector-icons";
 
 type EmailLoginScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -24,6 +25,7 @@ const EmailLoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const emailValid = email.toLowerCase().includes("@");
   const canProceed = emailValid && password.length > 0; // require password with email
@@ -80,13 +82,22 @@ const EmailLoginScreen = () => {
 
       <View style={styles.inputWrapper}>
         <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your password"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+        <View style={styles.passwordRow}>
+          <TextInput
+            style={[styles.input, { flex: 1 }]}
+            placeholder="Enter your password"
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TouchableOpacity
+            accessibilityRole="button"
+            onPress={() => setShowPassword((v) => !v)}
+            style={styles.eyeBtn}
+          >
+            <Ionicons name={showPassword ? "eye" : "eye-off"} size={20} color="#333" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Register link */}
@@ -141,6 +152,11 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
   },
+  passwordRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  eyeBtn: { padding: 10, marginLeft: 4 },
   registerText: {
     color: "#4A4A4A",
     textAlign: "center",

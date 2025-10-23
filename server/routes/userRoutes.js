@@ -8,6 +8,9 @@ const permitRoles = require("../middlewares/roleMiddleware");
 router.get("/profile", authMiddleware, userController.getProfile);
 router.put("/profile", authMiddleware, userController.updateProfile);
 
+// Live location update endpoint (self or admin)
+router.patch("/:id/location", authMiddleware, userController.updateLocation);
+
 // Admin-only CRUD for users
 router.post("/", authMiddleware, 
     permitRoles(["Admin"]), 

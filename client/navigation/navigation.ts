@@ -7,11 +7,12 @@ export type RootStackParamList = {
   Home: undefined;
   VerifyCode: { email: string , password?: string};
   Map: {homeLocation: HomeLocationData, currentLocation: HomeLocationData};
-  HomeLocationSetup: undefined;
+  HomeLocationSetup: { mode?: "goHome" | "return" } | undefined;
   Profile: undefined;
   Settings: undefined;
-  DriverFound: { ride?: any; driver?: any } | undefined;
+  DriverFound: { ride?: any; driver?: any; rideId?: string } | undefined;
   FindingDriver: { rideId?: any; drivers?: any[]; pickup?: { lat: number; lng: number }; vehicleTypeId?: string } | undefined;
+  DriverNavigate: { rideId: string } | undefined;
   DriverDashboard: undefined;
   RideRequests: undefined;
   DriverDrawer: undefined;

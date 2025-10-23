@@ -16,7 +16,7 @@ import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../store/store";
-import { saveHomeLocation } from "../store/locationSlice";
+import { saveHomeLocation, fetchCurrentLocation } from "../store/locationSlice";
 import AppHeader from "../components/AppHeader";
 
 interface Props {
@@ -189,18 +189,24 @@ export default function HomeLocationSetupScreen({ navigation, route }: Props) {
       };
 
       // Dispatch to Redux store and AsyncStorage
-      await dispatch(saveHomeLocation(homeLocationData)).unwrap();
+      const saved = await dispatch(saveHomeLocation(homeLocationData)).unwrap();
 
-      Alert.alert(
-        "Success",
-        "Home location set successfully!",
-        [
-          {
-            text: "OK",
-            onPress: () => navigation.replace("Home"),
-          },
-        ]
-      );
+      const mode = route?.params?.mode as ("goHome" | "return" | undefined);
+      if (mode === "goHome") {
+        // Get current location and continue to Map
+        const current = await dispatch(fetchCurrentLocation()).unwrap();
+        const currentLocation = {
+          latitude: current.latitude,
+          longitude: current.longitude,
+          address: "",
+          timestamp: Date.now(),
+        };
+        navigation.replace("Map", { homeLocation: saved, currentLocation });
+      } else if (mode === "return") {
+        navigation.goBack();
+      } else {
+        navigation.replace("Home");
+      }
     } catch (error) {
       console.error("Error saving home location:", error);
       Alert.alert("Error", "Failed to save home location. Please try again.");

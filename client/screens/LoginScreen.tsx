@@ -36,6 +36,15 @@ const LoginScreen = () => {
           <Text style={styles.buttonText}>Log In with Email</Text>
         </TouchableOpacity>
 
+        {/* Signup CTA */}
+        <TouchableOpacity
+          accessibilityRole="button"
+          style={styles.signUpBtn}
+          onPress={() => navigation.navigate("Register", { email: "", password: "" })}
+        >
+          <Text style={styles.signUpText}>New here? Sign up now!</Text>
+        </TouchableOpacity>
+
       </View>
     </SafeAreaView>
   );

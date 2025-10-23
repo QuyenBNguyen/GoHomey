@@ -138,3 +138,13 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+drivers.json
+GoHomey.users.drivers.json
+GoHomey.vehicletypes.json
+vehicle.json
+vehicleType.json
+.expo/README.md
+.expo/settings.json
+client/app.config.js
+client/README.md
+server/README.MD

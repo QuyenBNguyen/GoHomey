@@ -74,7 +74,7 @@ export default function HomeScreen() {
           { text: "Cancel", style: "cancel" },
           {
             text: "Set Home Location",
-            onPress: () => navigation.navigate("HomeLocationSetup"),
+            onPress: () => navigation.navigate("HomeLocationSetup", { mode: "goHome" }),
           },
         ]
       );

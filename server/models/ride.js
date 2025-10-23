@@ -15,4 +15,7 @@ const rideSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Index on status and createdAt for faster filtering of recent requested rides
+rideSchema.index({ status: 1, createdAt: -1 });
+
 module.exports = mongoose.model("Ride", rideSchema);

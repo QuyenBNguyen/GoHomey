@@ -46,6 +46,11 @@ const FindingDriverScreen: React.FC<Props> = ({ navigation, route }) => {
           navigation.replace("DriverFound", { ride: rideData.ride });
           return;
         }
+        if (rideData.ride && rideData.ride.status === "Cancelled") {
+          setLoading(false);
+          setError("Your ride request expired. Please try again.");
+          return;
+        }
         // Start or continue staged driver search if not yet accepted
         if (!searching && pickup && vehicleTypeId) {
           setSearching(true);

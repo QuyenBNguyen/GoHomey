@@ -23,12 +23,12 @@ if (EMAIL_ENABLED) {
       pass: process.env.EMAIL_PASS,
     },
     // prevent very long hangs
-    connectionTimeout: 10000, // 10s
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 5000,
     tls: {
-      // set to false if you have issues with certificates in dev
-      rejectUnauthorized: true,
+      // In local dev, you might disable strict cert checks
+      rejectUnauthorized: false,
     },
   });
 }
@@ -118,7 +118,10 @@ exports.register = async (req, res) => {
       code: otp,
       expires: Date.now() + 5 * 60 * 1000, // 5 minutes
     };
-    await sendOtpEmail(email, otp);
+    // Fire-and-forget email sending to avoid blocking client in dev
+    sendOtpEmail(email, otp).catch((err) => {
+      console.error("async sendOtpEmail (register) error:", err.message || err);
+    });
 
     return res.status(201).json({ message: "Registered. OTP sent to email", email });
   } catch (err) {
@@ -158,14 +161,14 @@ exports.requestOtp = async (req, res) => {
     const otp = generateOtp();
     otpStore[email] = { code: otp, expires: Date.now() + 5 * 60 * 1000 };
 
-    try {
-      await sendOtpEmail(email, otp);
-      console.log(`\nOTP sent to ${email}`);
-      return res.json({ message: "OTP sent to email" });
-    } catch (mailErr) {
+    // Fire-and-forget email sending to avoid blocking client in dev
+    sendOtpEmail(email, otp).then(() => {
+      console.log(`\nOTP send initiated for ${email}`);
+    }).catch((mailErr) => {
       console.error("\nrequestOtp: sendOtpEmail error:", mailErr.message || mailErr);
-      return res.status(502).json({ message: "Failed to send OTP email. Try again later." });
-    }
+    });
+    // Respond immediately so clients don't hit axios timeouts even if SMTP is slow
+    return res.json({ message: "OTP generated and delivery initiated" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });

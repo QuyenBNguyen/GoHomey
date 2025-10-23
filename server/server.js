@@ -7,6 +7,7 @@ const userRoutes = require("./routes/userRoutes");
 const driverRoutes = require("./routes/driverRoutes");
 const phoneAuthRoutes = require("./routes/phoneAuthRoutes");
 const userDetailRoutes = require("./routes/userDetailRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 
 
 const app = express();
@@ -41,6 +42,7 @@ app.use("/rides", rideRoutes);
 app.use("/users", userRoutes);
 app.use("/drivers", driverRoutes);
 app.use("/user-details", userDetailRoutes);
+app.use("/payments", paymentRoutes);
 // Pricing routes removed, now handled in /rides
 
 app.get("/", (req, res) => res.send("API Running"));

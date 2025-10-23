@@ -3,22 +3,20 @@ const router = express.Router();
 const rideController = require("../controllers/rideController");
 const { authMiddleware } = require("../middlewares/authMiddleware");
 
+// Pricing helpers
 router.get("/vehicle-types", rideController.getVehicleTypes);
 router.post("/estimate", rideController.getPriceEstimate);
 
-// CRUD
-router.post("/", authMiddleware, rideController.createRide);
-router.get("/:id", authMiddleware, rideController.getRide);
-router.put("/:id", authMiddleware, rideController.updateRideStatus);
-router.delete("/:id", authMiddleware, rideController.deleteRide);
+// Create & fetch rides (match controller names)
+router.post("/", authMiddleware, rideController.createRideRequest);
+router.get("/:id", authMiddleware, rideController.getRideById);
 
-// Matching + Tracking
-router.get("/:id/track-driver", authMiddleware, rideController.trackDriver);
-router.get("/:id/track-route", authMiddleware, rideController.trackRoute);
-// Driver accepts a ride (atomic)
+// Tracking
+router.get("/:id/track-driver", authMiddleware, rideController.getDriverToCustomerRoute);
+router.get("/:id/track-route", authMiddleware, rideController.trackCustomerToHome);
+router.get("/:id/track-customer", authMiddleware, rideController.trackCustomerToHome);
+
+// Accept ride (atomic)
 router.post("/:id/accept", authMiddleware, rideController.acceptRideRequest);
-
-// Pricing-related endpoints
-
 
 module.exports = router;

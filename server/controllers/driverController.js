@@ -122,8 +122,8 @@ exports.getDriverProfile = async (req, res) => {
     const driver = await Driver.findOne({ _id: driverId, role: "Driver" });
     if (!driver) return res.status(404).json({ message: "Driver not found" });
 
-    const details = await UserDetail.findOne({ userId: driver._id });
-    const vehicles = await Vehicle.find({ owner: driver._id });
+  const details = await UserDetail.findOne({ userId: driver._id });
+  const vehicles = await Vehicle.find({ ownerId: driver._id });
 
     // Aggregate rating
     const ratingAgg = await Rating.aggregate([
@@ -219,23 +219,28 @@ exports.updateDriverProfile = async (req, res) => {
 exports.addOrUpdateVehicle = async (req, res) => {
   try {
     const driverId = req.params.id;
-    const { type, color, license, plate } = req.body;
+    // Accept both legacy and current field names
+    const { vehicleTypeId, type, color, license, licensePlate, plate, model } = req.body;
 
-    let vehicle = await Vehicle.findOne({ owner: driverId, plate });
+    const resolvedTypeId = vehicleTypeId || type; // if client sends 'type' as vehicleTypeId
+    const resolvedPlate = licensePlate || plate;
+
+    let vehicle = await Vehicle.findOne({ ownerId: driverId, licensePlate: resolvedPlate });
     if (vehicle) {
       // Update existing
-      vehicle.type = type || vehicle.type;
+      if (resolvedTypeId) vehicle.vehicleTypeId = resolvedTypeId;
       vehicle.color = color || vehicle.color;
-      vehicle.license = license || vehicle.license;
+      vehicle.licensePlate = resolvedPlate || vehicle.licensePlate;
+      vehicle.model = model || vehicle.model;
       await vehicle.save();
     } else {
       // Add new
       vehicle = await Vehicle.create({
-        owner: driverId,
-        type,
+        ownerId: driverId,
+        vehicleTypeId: resolvedTypeId,
         color,
-        license,
-        plate,
+        licensePlate: resolvedPlate,
+        model,
       });
     }
 
@@ -249,7 +254,7 @@ exports.addOrUpdateVehicle = async (req, res) => {
 exports.getDriverVehicles = async (req, res) => {
   try {
     const driverId = req.params.id;
-    const vehicles = await Vehicle.find({ owner: driverId });
+    const vehicles = await Vehicle.find({ ownerId: driverId });
     res.json(vehicles);
   } catch (err) {
     res.status(500).json({ message: "Error fetching vehicles", error: err.message });
@@ -394,7 +399,7 @@ exports.findNearbyDriversByType = async (req, res) => {
     const driversWithVehicleType = [];
     for (const driver of activeDrivers) {
       const vehicle = await Vehicle.findOne({
-        owner: driver._id,
+        ownerId: driver._id,
         vehicleTypeId: vehicleTypeId,
         status: "Available",
       });
@@ -445,17 +450,21 @@ exports.getAvailableRideRequests = async (req, res) => {
     const queryLat = req.query.lat ? parseFloat(req.query.lat) : undefined;
     const queryLng = req.query.lng ? parseFloat(req.query.lng) : undefined;
     const radiusKm = req.query.radiusKm ? parseFloat(req.query.radiusKm) : 5;
+    const expiryMinutes = process.env.RIDE_REQUEST_EXPIRY_MINUTES
+      ? parseInt(process.env.RIDE_REQUEST_EXPIRY_MINUTES, 10)
+      : 3; // default: 3 minutes
+    const notBefore = new Date(Date.now() - expiryMinutes * 60 * 1000);
+
+    console.log("[getAvailableRideRequests] driverId=", driverId, "queryLat=", queryLat, "queryLng=", queryLng, "radiusKm=", radiusKm, "notBefore=", notBefore.toISOString());
 
     // Ensure driver exists
     const driver = await Driver.findOne({ _id: driverId, role: "Driver" });
     if (!driver) return res.status(404).json({ message: "Driver not found" });
 
-    // Find driver's available vehicle types
-    const vehicles = await Vehicle.find({ owner: driverId, status: "Available" }).select("vehicleTypeId");
-    const vehicleTypeIds = vehicles.map(v => v.vehicleTypeId);
-    if (vehicleTypeIds.length === 0) {
-      return res.json([]);
-    }
+    // Find driver's vehicle types (relax: include all vehicles; we'll filter by type if any exist)
+    const vehicles = await Vehicle.find({ ownerId: driverId }).select("vehicleTypeId status ownerId licensePlate");
+    const vehicleTypeIds = Array.from(new Set(vehicles.map(v => String(v.vehicleTypeId))));
+    console.log("[getAvailableRideRequests] driver vehicles count=", vehicles.length, "vehicleTypeIds=", vehicleTypeIds);
 
     // Determine origin location for proximity (query or driver's currentLocation)
     let lat = queryLat, lng = queryLng;
@@ -464,6 +473,9 @@ exports.getAvailableRideRequests = async (req, res) => {
       if (details && details.currentLocation && Array.isArray(details.currentLocation.coordinates)) {
         const [dlng, dlat] = details.currentLocation.coordinates;
         lat = dlat; lng = dlng;
+        console.log("[getAvailableRideRequests] Using driver currentLocation lat/lng:", lat, lng);
+      } else {
+        console.log("[getAvailableRideRequests] No lat/lng provided and no driver currentLocation available; proceeding without geo filter");
       }
     }
 
@@ -486,10 +498,14 @@ exports.getAvailableRideRequests = async (req, res) => {
       { $unwind: "$ride" },
       { $match: {
           "ride.status": "Requested",
-          $or: [ { "ride.driverId": { $exists: false } }, { "ride.driverId": null } ],
-          "ride.vehicleTypeId": { $in: vehicleTypeIds }
+          "ride.createdAt": { $gte: notBefore },
+          $or: [ { "ride.driverId": { $exists: false } }, { "ride.driverId": null } ]
         } },
-      { $sort: { createdAt: 1 } },
+      // Ensure customer is still acceptable (active or missing status)
+      { $lookup: { from: "users", localField: "ride.customerId", foreignField: "_id", as: "customer" } },
+      { $unwind: "$customer" },
+      { $match: { $or: [ { "customer.status": "Active" }, { "customer.status": { $exists: false } } ] } },
+      { $sort: { "ride.createdAt": 1 } },
       { $project: {
           _id: 0,
           rideId: "$rideId",
@@ -505,10 +521,96 @@ exports.getAvailableRideRequests = async (req, res) => {
         } }
     );
 
+    // If driver has any vehicles, filter results by those vehicleTypeIds post-projection (type-consistent string compare)
+    if (vehicleTypeIds.length > 0) {
+      pipeline.push({
+        $match: { vehicleTypeId: { $in: vehicleTypeIds.map(id => new (require('mongoose')).Types.ObjectId(id)) } }
+      });
+    }
+
+    console.log("[getAvailableRideRequests] Aggregation pipeline:", JSON.stringify(pipeline, null, 2));
     const results = await RideDetail.aggregate(pipeline);
+    console.log("[getAvailableRideRequests] results count=", results.length);
     res.json(results);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error fetching available requests", error: err.message });
+  }
+};
+
+// Debug endpoint to show intermediate filter counts for available requests
+exports.debugAvailableRideRequests = async (req, res) => {
+  try {
+    const driverId = req.params.id;
+    const queryLat = req.query.lat ? parseFloat(req.query.lat) : undefined;
+    const queryLng = req.query.lng ? parseFloat(req.query.lng) : undefined;
+    const radiusKm = req.query.radiusKm ? parseFloat(req.query.radiusKm) : 5;
+    const expiryMinutes = process.env.RIDE_REQUEST_EXPIRY_MINUTES
+      ? parseInt(process.env.RIDE_REQUEST_EXPIRY_MINUTES, 10)
+      : 3; // default: 3 minutes
+    const notBefore = new Date(Date.now() - expiryMinutes * 60 * 1000);
+
+    // Ensure driver exists
+    const driver = await Driver.findOne({ _id: driverId, role: "Driver" });
+    if (!driver) return res.status(404).json({ message: "Driver not found" });
+
+    // Step 1: how many vehicles does driver have?
+    const vehicles = await Vehicle.find({ ownerId: driverId }).select("vehicleTypeId status ownerId licensePlate");
+    const vehicleTypeIds = Array.from(new Set(vehicles.map(v => String(v.vehicleTypeId))));
+
+    // Step 2: how many recent requested rides exist (global)
+    const recentRequested = await Ride.countDocuments({ status: "Requested", createdAt: { $gte: notBefore } });
+
+    // Step 3: how many unassigned recent requested rides exist
+    const unassignedRecent = await Ride.countDocuments({ status: "Requested", createdAt: { $gte: notBefore }, $or: [ { driverId: { $exists: false } }, { driverId: null } ] });
+
+    // Step 4: how many match vehicle types (if driver has types)
+    let typeMatched = null;
+    if (vehicleTypeIds.length > 0) {
+      typeMatched = await Ride.countDocuments({ status: "Requested", createdAt: { $gte: notBefore }, vehicleTypeId: { $in: vehicleTypeIds }, $or: [ { driverId: { $exists: false } }, { driverId: null } ] });
+    }
+
+    // Step 5: how many are within geo radius (if lat/lng provided)
+    let geoMatched = null;
+    if (queryLat != null && queryLng != null) {
+      // Use aggregation with $geoNear on RideDetail
+      const geo = await RideDetail.aggregate([
+        { $geoNear: { near: { type: "Point", coordinates: [queryLng, queryLat] }, distanceField: "distanceMeters", spherical: true, maxDistance: radiusKm * 1000, key: "pickup" } },
+        { $lookup: { from: "rides", localField: "rideId", foreignField: "_id", as: "ride" } },
+        { $unwind: "$ride" },
+        { $match: { "ride.status": "Requested", "ride.createdAt": { $gte: notBefore }, $or: [ { "ride.driverId": { $exists: false } }, { "ride.driverId": null } ] } },
+        { $count: "n" }
+      ]);
+      geoMatched = (geo[0] && geo[0].n) ? geo[0].n : 0;
+    }
+
+    // Get sample results for manual inspection (limit 5)
+    const samplePipeline = [];
+    if (queryLat != null && queryLng != null) {
+      samplePipeline.push({ $geoNear: { near: { type: "Point", coordinates: [queryLng, queryLat] }, distanceField: "distanceMeters", spherical: true, maxDistance: radiusKm * 1000, key: "pickup" } });
+    }
+    samplePipeline.push(
+      { $lookup: { from: "rides", localField: "rideId", foreignField: "_id", as: "ride" } },
+      { $unwind: "$ride" },
+      { $match: { "ride.status": "Requested", "ride.createdAt": { $gte: notBefore }, $or: [ { "ride.driverId": { $exists: false } }, { "ride.driverId": null } ] } },
+      { $project: { rideId: 1, pickup: 1, dropoff: 1, createdAt: "$ride.createdAt", vehicleTypeId: "$ride.vehicleTypeId", price: "$ride.price" } },
+      { $sort: { createdAt: -1 } },
+      { $limit: 5 }
+    );
+
+    const sample = await RideDetail.aggregate(samplePipeline);
+
+    res.json({
+      vehicleCount: vehicles.length,
+      vehicleTypeIds,
+      recentRequested,
+      unassignedRecent,
+      typeMatched,
+      geoMatched,
+      sample
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error debugging available requests", error: err.message });
   }
 };

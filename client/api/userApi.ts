@@ -32,3 +32,18 @@ export const getUserById = async (userId: string, token: string) => {
   });
   return response.data;
 };
+
+// Update a user's current location (live tracking upload)
+export const updateUserLocation = async (
+  userId: string,
+  lat: number,
+  lng: number,
+  token: string
+) => {
+  const response = await axios.patch(
+    `${API_BASE}/users/${userId}/location`,
+    { lat, lng },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+};

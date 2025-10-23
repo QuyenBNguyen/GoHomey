@@ -39,5 +39,7 @@ router.put("/:id/location", driverController.updateDriverLocation);
 
 // Available unassigned ride requests for this driver (nearby + matching vehicle type)
 router.get("/:id/available-requests", driverController.getAvailableRideRequests);
+// Debug endpoint to inspect filter steps for available requests
+router.get("/:id/available-requests/debug", driverController.debugAvailableRideRequests);
 
 module.exports = router;

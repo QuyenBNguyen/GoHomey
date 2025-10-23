@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -18,6 +19,9 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/navigation";
 import AppHeader from "../components/AppHeader";
+// Date picker (native)
+// @ts-ignore - types provided by package when installed
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 
 export default function ProfileScreen() {
@@ -37,9 +41,13 @@ export default function ProfileScreen() {
   const [email, setEmail] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
   const [dob, setDob] = useState("");
+  const [dobDate, setDobDate] = useState<Date | null>(null);
+  const [showDobPicker, setShowDobPicker] = useState(false);
   const [gender, setGender] = useState<"Male" | "Female" | "Other" | "">("");
   const [rating, setRating] = useState<number | null>(null);
   const [homeAddress, setHomeAddress] = useState<string | null>(null);
+  const [homeLat, setHomeLat] = useState<number | null>(null);
+  const [homeLng, setHomeLng] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -66,10 +74,19 @@ export default function ProfileScreen() {
         setPhone(res.user?.phone ?? "");
         setEmail(res.user?.email ?? "");
         setEmergencyContact(res.detail?.emergencyContact ?? "");
-        setDob(res.user?.dob ? new Date(res.user.dob).toISOString().slice(0, 10) : "");
+        if (res.user?.dob) {
+          const d = new Date(res.user.dob);
+          setDob(d.toISOString().slice(0, 10));
+          setDobDate(d);
+        } else {
+          setDob("");
+          setDobDate(null);
+        }
         setGender(res.user?.gender ?? "");
         setRating(typeof res.detail?.rating === "number" ? res.detail.rating : null);
         setHomeAddress(res.detail?.homeLocation?.address ?? null);
+        setHomeLat(typeof res.detail?.homeLocation?.lat === "number" ? res.detail.homeLocation.lat : null);
+        setHomeLng(typeof res.detail?.homeLocation?.lng === "number" ? res.detail.homeLocation.lng : null);
       } catch (err: any) {
         console.error("Failed to load profile", err);
         const status = err?.response?.status;
@@ -135,7 +152,30 @@ export default function ProfileScreen() {
         <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" />
 
         <Text style={styles.label}>Date of birth</Text>
-        <TextInput style={styles.input} value={dob} onChangeText={setDob} placeholder="YYYY-MM-DD" />
+        <TouchableOpacity
+          onPress={() => setShowDobPicker(true)}
+          style={[styles.input, { justifyContent: "center" }]}
+        >
+          <Text>{dob ? dob : "Select date"}</Text>
+        </TouchableOpacity>
+        {showDobPicker && (
+          <DateTimePicker
+            value={dobDate || new Date(2000, 0, 1)}
+            mode="date"
+            display={Platform.OS === "ios" ? "inline" : "default"}
+            onChange={(event: any, selectedDate?: Date) => {
+              setShowDobPicker(false);
+              if (selectedDate) {
+                setDobDate(selectedDate);
+                // format YYYY-MM-DD
+                const yyyy = selectedDate.getFullYear();
+                const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
+                const dd = String(selectedDate.getDate()).padStart(2, "0");
+                setDob(`${yyyy}-${mm}-${dd}`);
+              }
+            }}
+          />
+        )}
 
         <Text style={styles.label}>Gender</Text>
         <View style={styles.genderRow}>
@@ -161,21 +201,37 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {homeAddress ? (
+        {homeAddress || (homeLat != null && homeLng != null) ? (
           <View style={styles.readOnlyRow}>
             <Text style={styles.readOnlyLabel}>Home address</Text>
-            <Text style={styles.readOnlyValue}>{homeAddress}</Text>
+            <Text style={styles.readOnlyValue}>
+              {homeAddress || `${homeLat?.toFixed(5)}, ${homeLng?.toFixed(5)}`}
+            </Text>
           </View>
         ) : (
           <View style={[styles.readOnlyRow, { alignItems: "center" }]}>
             <Text style={styles.readOnlyLabel}>Home location not set</Text>
             <TouchableOpacity
               style={{ marginTop: 8, backgroundColor: "#fff", borderWidth: 1, borderColor: "#A993FF", padding: 8, borderRadius: 8 }}
-              onPress={() => navigation.navigate("HomeLocationSetup")}
+              onPress={() => navigation.navigate("HomeLocationSetup", { mode: "return" })}
             >
               <Text style={{ color: "#A993FF" }}>Set Home Location</Text>
             </TouchableOpacity>
           </View>
+        )}
+
+        {/* Role and status (read only) */}
+        {user && (
+          <>
+            <View style={styles.readOnlyRow}>
+              <Text style={styles.readOnlyLabel}>Role</Text>
+              <Text style={styles.readOnlyValue}>{user.role}</Text>
+            </View>
+            <View style={styles.readOnlyRow}>
+              <Text style={styles.readOnlyLabel}>Status</Text>
+              <Text style={styles.readOnlyValue}>{user.status}</Text>
+            </View>
+          </>
         )}
 
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>

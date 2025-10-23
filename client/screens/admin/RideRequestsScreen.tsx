@@ -1,11 +1,14 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/store";
 import { getAvailableRideRequests } from "../../api/driverApi";
 import { acceptRide } from "../../api/rideApi";
 import { Ionicons } from "@expo/vector-icons";
+import { RootStackParamList } from "../../navigation/navigation";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 interface RideRequestItem {
   rideId: string;
@@ -22,6 +25,7 @@ interface RideRequestItem {
 
 export default function RideRequestsScreen() {
   const { token, user } = useSelector((s: RootState) => s.auth);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [requests, setRequests] = useState<RideRequestItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -54,6 +58,8 @@ export default function RideRequestsScreen() {
       await acceptRide(rideId, driverId, token);
       // Remove from the list optimistically
       setRequests(prev => prev.filter(r => r.rideId !== rideId));
+      // Navigate to driver's navigation screen
+      navigation.navigate("DriverNavigate", { rideId });
     } catch (e: any) {
       alert(e?.message || "Failed to accept ride");
       // Refresh in case someone else accepted

@@ -18,6 +18,51 @@ exports.createUser = async (req, res) => {
   }
 };
 
+// ✅ Update current location for a user (live tracking upload)
+exports.updateLocation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { lat, lng } = req.body || {};
+
+    // AuthZ: allow self-update or admins
+    const requester = req.user; // set by authMiddleware
+    if (!requester) return res.status(401).json({ message: "Unauthorized" });
+    const isSelf = String(requester.id) === String(id);
+    const isAdmin = requester.role === "Admin";
+    if (!isSelf && !isAdmin) {
+      return res.status(403).json({ message: "Forbidden: cannot update another user's location" });
+    }
+
+    // Validate coordinates
+    if (typeof lat !== "number" || typeof lng !== "number" || Number.isNaN(lat) || Number.isNaN(lng)) {
+      return res.status(400).json({ message: "lat and lng must be numbers" });
+    }
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return res.status(400).json({ message: "lat must be between -90 and 90, lng between -180 and 180" });
+    }
+
+    // Persist as GeoJSON Point [lng, lat]
+    const detail = await UserDetail.findOneAndUpdate(
+      { userId: id },
+      {
+        $set: {
+          currentLocation: { type: "Point", coordinates: [lng, lat] },
+        },
+      },
+      { new: true, upsert: true }
+    ).lean();
+
+    return res.json({
+      userId: id,
+      currentLocation: detail.currentLocation,
+      updatedAt: detail.updatedAt || new Date(),
+    });
+  } catch (err) {
+    console.error("[updateLocation]", err);
+    return res.status(500).json({ message: "Error updating location", error: err.message });
+  }
+};
+
 // ✅ Get all users with search + filter
 exports.getUsers = async (req, res) => {
   try {
