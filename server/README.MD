@@ -8,6 +8,12 @@ Default port: 5000
 
 Authentication: JWT (Authorization: Bearer <token>) for protected endpoints.
 
+## Health & diagnostics
+- GET / — quick index responds with "API Running"
+- GET /ping — JSON health check { ok, time, uptimeSec, version, node, env }
+- HEAD /ping — lightweight health probe
+- GET /_diag/echo — diagnostic echo of request metadata (protocol, forwarded headers, ip). No secrets exposed. Enable request logging with LOG_PING=true.
+
 ## Mount points
 - /auth → authRoutes
 - /auth → phoneAuthRoutes (OTP)
@@ -92,6 +98,8 @@ Matching
 ## Environment
 - MONGO_URI must be set to enable MongoDB connection.
 - CORS is enabled for all origins.
+ - LOG_PING=true to log ping/diag requests to console
+ - The server sets `trust proxy` to correctly detect HTTPS behind proxies (e.g., Render)
 1. Map Comp:
     - Display: react-native-maps + OSM
     - Routing: OpenRouteService API
