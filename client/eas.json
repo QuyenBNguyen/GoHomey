@@ -6,15 +6,30 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "development",
+      "env": {
+        "ENVIRONMENT": "development",
+        "API_BASE": "https://gohomey.me"
+      }
     },
     "preview": {
+      "channel": "preview",
       "android": {
-      "buildType": "apk"
+        "buildType": "apk"
+      },
+      "env": {
+        "ENVIRONMENT": "production",
+        "API_BASE": "https://gohomey.me"
       }
     },
     "production": {
-      "autoIncrement": true
+      "channel": "production",
+      "autoIncrement": true,
+      "env": {
+        "ENVIRONMENT": "production",
+        "API_BASE": "https://gohomey.me"
+      }
     }
   },
   "submit": {

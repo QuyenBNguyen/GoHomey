@@ -4,12 +4,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 import Constants from "expo-constants";
-
-const API_BASE =
-  ((Constants as any).expoConfig?.extra?.API_BASE as string) ||
-  ((Constants as any).manifest?.extra?.API_BASE as string) ||
-  (process.env.API_BASE as string) ||
-  "http://192.168.5.107:5000";
+import { API_BASE } from "./config";
 
 const ORS_KEY =
   ((Constants as any).expoConfig?.extra?.ORS_KEY as string) ||
@@ -107,11 +102,46 @@ export async function clearHomeLocationCache(): Promise<void> {
 /* ---------- Expo location ---------- */
 
 export async function fetchCurrentLocationAPI(): Promise<Coordinates> {
+  // Ensure services enabled (GPS)
+  const servicesEnabled = await Location.hasServicesEnabledAsync();
+  if (!servicesEnabled) {
+    throw new Error("Location services are disabled");
+  }
+
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== "granted") throw new Error("Location permission not granted");
 
-  const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-  return { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+  // Use a reasonable timeout and balanced accuracy to avoid hangs/crashes on some devices
+  try {
+    const loc = await Promise.race([
+      Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+        mayShowUserSettingsDialog: true,
+      }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timeout acquiring location')), 10000)),
+    ] as const) as Location.LocationObject;
+    return { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+  } catch (e) {
+    // Fallback: request a single update via watch and clear immediately
+    return await new Promise<Coordinates>((resolve, reject) => {
+      let sub: Location.LocationSubscription | null = null;
+      const timer = setTimeout(() => {
+        if (sub) sub.remove();
+        reject(new Error('Timeout acquiring location'));
+      }, 12000);
+      Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.Low, timeInterval: 0, distanceInterval: 0 },
+        (pos) => {
+          clearTimeout(timer);
+          if (sub) sub.remove();
+          resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+        }
+      ).then((s) => { sub = s; }).catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+    });
+  }
 }
 
 // Update current location for any user (after login)

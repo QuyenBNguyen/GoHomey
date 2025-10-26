@@ -1,18 +1,7 @@
 // src/api/authAPI.ts
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Constants from "expo-constants";
-
-// Resolve runtime config preferring expoConfig.extra (EAS), then manifest.extra
-const extras =
-  (Constants as any).expoConfig?.extra ||
-  (Constants as any).manifest?.extra ||
-  undefined;
-
-const API_BASE =
-  (extras?.API_BASE as string) ||
-  (process.env?.API_BASE as string) ||
-  "http://192.168.5.107:5000"; // fallback only; prefer client/.env via app.config.js
+import { API_BASE } from "./config";
 
 // create axios instance with timeout so client fails fast instead of hanging
 const api = axios.create({
@@ -21,7 +10,7 @@ const api = axios.create({
 });
 
 // Debug: log resolved API_BASE at runtime so dev can confirm which address the app uses
-console.log("authApi: resolved API_BASE =", API_BASE);
+console.log("[authApi] API_BASE:", API_BASE);
 
 // helper to set auth header after login
 export const setAuthToken = (token?: string) => {

@@ -1,16 +1,7 @@
 
 // API requests for driver dashboard
 import { Platform } from "react-native";
-import Constants from "expo-constants";
-const extras =
-  (Constants as any).expoConfig?.extra ||
-  (Constants as any).manifest?.extra ||
-  undefined; 
-
-const API_BASE =
-  (extras?.API_BASE as string) ||
-  (process.env?.API_BASE as string) ||
-  "http://192.168.5.107:5000";
+import { API_BASE } from "./config";
 
 // All functions assume JWT token is available
 export async function getDriverProfile(driverId: string, token: string) {

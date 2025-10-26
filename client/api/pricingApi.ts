@@ -1,15 +1,5 @@
 // API requests for pricing and vehicle types (now under /rides)
-import Constants from "expo-constants";
-
-const extras =
-  (Constants as any).expoConfig?.extra ||
-  (Constants as any).manifest?.extra ||
-  undefined;
-
-const API_BASE =
-  (extras?.API_BASE as string) ||
-  (process.env?.API_BASE as string) ||
-  "http://192.168.5.107:5000";
+import { API_BASE } from "./config";
 
 export interface VehicleType {
   _id: string;
