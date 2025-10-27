@@ -15,8 +15,7 @@ router.patch("/:id/location", authMiddleware, userController.updateLocation);
 router.post("/", authMiddleware, 
     permitRoles(["Admin"]), 
     userController.createUser);
-router.get("/", authMiddleware, 
-    permitRoles(["Admin"]), 
+router.get("/",
     userController.getUsers);
 router.get("/:id", authMiddleware, 
     permitRoles(["Admin"]), 

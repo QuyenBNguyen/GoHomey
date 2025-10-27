@@ -8,29 +8,31 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/logo.png",
+      "image": "./assets/ic_logo.png",
       "resizeMode": "cover",
       "backgroundColor": "#A993FF"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gohomey.app"
+      
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.png",
+        "foregroundImage": "./assets/ic_logo.png",
         "backgroundColor": "#A993FF"
       },
       "package": "com.gohomey.app",
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/logo.png"
+      "favicon": "./assets/ic_logo.png"
     },
     "extra": {
       "ORS_KEY": "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImNmNDUwZmNkMmNkNjQ2NTY4ODU2MDQwMDdhZTJhYWZiIiwiaCI6Im11cm11cjY0In0=",
+      "API_BASE_URL": "https://gohomey.me",
       "eas": {
-        "projectId": "ba2b0870-57b8-4838-96dc-913a70775ebd"
+        "projectId": "05bdb806-08f7-4168-ad67-953fef274def"
       }
     },
     "plugins": [
@@ -41,7 +43,8 @@
             "useFrameworks": "static"
           },
           "android": {
-            "enableProguardInReleaseBuilds": true
+            "enableProguardInReleaseBuilds": false,
+            "useCleartextTraffic": true
           }
         }
       ]
