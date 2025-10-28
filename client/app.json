@@ -6,6 +6,7 @@
     "orientation": "portrait",
   "icon": "./assets/ic_logo.png",
     "userInterfaceStyle": "light",
+    "runtimeVersion": { "policy": "appVersion" },
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/ic_logo.png",
