@@ -19,6 +19,7 @@ import { useDispatch } from "react-redux";
 import { AppDispatch } from "../store/store";
 import { saveHomeLocation, fetchCurrentLocation } from "../store/locationSlice";
 import AppHeader from "../components/AppHeader";
+import MapActions from "../components/MapActions";
 
 interface Props {
   navigation: any;
@@ -320,6 +321,9 @@ export default function HomeLocationSetupScreen({ navigation, route }: Props) {
             </View>
           </MapLibreGL.MapView>
         </View>
+
+  {/* Quick actions: update my location + return */}
+  <MapActions position={{ right: 20, bottom: 180 }} />
 
         <View style={styles.controls}>
           <TouchableOpacity

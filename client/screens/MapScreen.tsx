@@ -7,6 +7,7 @@ import { RootStackParamList } from "../navigation/navigation";
 
 import MapSection from "../components/MapSection";
 import VehicleOptions from "../components/VehicleOptions";
+import MapActions from "../components/MapActions";
 import { createRide, findNearbyDrivers } from "../api/rideApi";
 
 
@@ -76,6 +77,9 @@ export default function MapScreen() {
           currentLocation={currentLocation}
           homeLocation={homeLocation}
         />
+
+        {/* Quick actions: update my location + return */}
+        <MapActions position={{ right: 12, bottom: 170 }} />
 
         {/* Vehicle Options */}
         <VehicleOptions 

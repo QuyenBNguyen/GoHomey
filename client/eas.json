@@ -20,7 +20,8 @@
       },
       "env": {
         "ENVIRONMENT": "production",
-        "API_BASE": "https://gohomey.me"
+        "API_BASE": "https://gohomey.me",
+        "MAP_ATTRIBUTION": "© Geoapify"
       }
     },
     "production": {
@@ -28,7 +29,8 @@
       "autoIncrement": true,
       "env": {
         "ENVIRONMENT": "production",
-        "API_BASE": "https://gohomey.me"
+        "API_BASE": "https://gohomey.me",
+        "MAP_ATTRIBUTION": "© Geoapify"
       }
     }
   },

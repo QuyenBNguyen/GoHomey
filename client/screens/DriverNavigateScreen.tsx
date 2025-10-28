@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from "react-native";
 import MapLibreGL from "@maplibre/maplibre-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import MapActions from "../components/MapActions";
 import { useRoute } from "@react-navigation/native";
 import { useSelector } from "react-redux";
 import { getRide, trackDriver, trackRoute } from "../api/rideApi";
@@ -192,6 +193,9 @@ export default function DriverNavigateScreen() {
             </Text>
           </View>
         </MapLibreGL.MapView>
+
+  {/* Quick actions: update my location + return */}
+  <MapActions position={{ right: 12, bottom: 120 }} />
 
         {/* Bottom sheet: customer basic info + call */}
         <View style={styles.bottomSheet}>

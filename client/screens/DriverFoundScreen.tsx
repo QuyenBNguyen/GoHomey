@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from "react-native";
 import MapLibreGL from "@maplibre/maplibre-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import MapActions from "../components/MapActions";
 import { useRoute } from "@react-navigation/native";
 import { useSelector } from "react-redux";
 import { getRide, trackRoute } from "../api/rideApi";
@@ -253,6 +254,9 @@ const DriverFoundScreen: React.FC = () => {
             </Text>
           </View>
         </MapLibreGL.MapView>
+
+  {/* Quick actions: update my location + return */}
+  <MapActions position={{ right: 12, bottom: 120 }} />
 
         <View style={styles.bottomSheet}>
           <Text style={styles.sheetTitle}>Driver on the way</Text>
