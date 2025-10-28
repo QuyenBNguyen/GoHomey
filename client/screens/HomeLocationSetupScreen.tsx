@@ -11,7 +11,8 @@ import {
   Keyboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import MapView, { Marker, Region } from "react-native-maps";
+import MapLibreGL from "@maplibre/maplibre-react-native";
+import Constants from "expo-constants";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 import { useDispatch } from "react-redux";
@@ -30,7 +31,7 @@ export default function HomeLocationSetupScreen({ navigation, route }: Props) {
   const [homeLocation, setHomeLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [homeAddress, setHomeAddress] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mapRegion, setMapRegion] = useState<Region>({
+  const [mapRegion, setMapRegion] = useState<{ latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number }>({
     latitude: 16.054407,   // Da Nang center
     longitude: 108.202164, // Da Nang center
     latitudeDelta: 0.05,
@@ -129,12 +130,17 @@ export default function HomeLocationSetupScreen({ navigation, route }: Props) {
     }
   };
 
-  const handleMapPress = (event: any) => {
-    const { latitude, longitude } = event.nativeEvent.coordinate;
-    setHomeLocation({ latitude, longitude });
-
-    // Update address when user taps on map
-    reverseGeocode(latitude, longitude);
+  const handleMapPress = (e: any) => {
+    try {
+      // MapLibre onPress event: e.geometry.coordinates => [lng, lat]
+      const coords = e?.geometry?.coordinates;
+      const longitude = Array.isArray(coords) ? Number(coords[0]) : undefined;
+      const latitude = Array.isArray(coords) ? Number(coords[1]) : undefined;
+      if (typeof latitude === "number" && typeof longitude === "number") {
+        setHomeLocation({ latitude, longitude });
+        reverseGeocode(latitude, longitude);
+      }
+    } catch {}
   };
 
   const reverseGeocode = async (latitude: number, longitude: number) => {
@@ -284,21 +290,35 @@ export default function HomeLocationSetupScreen({ navigation, route }: Props) {
         )}
 
         <View style={styles.mapContainer}>
-          <MapView
-            style={styles.map}
-            region={mapRegion}
-            onPress={handleMapPress}
-            showsUserLocation={true}
-            showsMyLocationButton={false}
-          >
+          {/* MapLibre map with provider style */}
+          {/* @ts-ignore styleURL supported at runtime */}
+          <MapLibreGL.MapView style={styles.map} styleURL={(((Constants as any).expoConfig?.extra?.MAP_STYLE_URL) || ((Constants as any).manifest?.extra?.MAP_STYLE_URL) || "https://demotiles.maplibre.org/style.json") as string} logoEnabled={false} compassEnabled onPress={handleMapPress}>
+            <MapLibreGL.Camera
+              zoomLevel={Math.max(1, 14 - Math.log2(Math.max(mapRegion.latitudeDelta, mapRegion.longitudeDelta) / 0.01))}
+              centerCoordinate={[mapRegion.longitude, mapRegion.latitude]}
+            />
+            {/* Show current user location */}
+            {/* @ts-ignore */}
+            <MapLibreGL.UserLocation visible={true} showsUserHeadingIndicator={true} />
             {homeLocation && (
-              <Marker
-                coordinate={homeLocation}
-                title="Your Home"
-                pinColor="blue"
-              />
+              // @ts-ignore
+              <MapLibreGL.PointAnnotation id="home" coordinate={[homeLocation.longitude, homeLocation.latitude]}>
+                <></>
+              </MapLibreGL.PointAnnotation>
             )}
-          </MapView>
+            {/* Attribution overlay */}
+            <View pointerEvents="none" style={styles.attributionWrap}>
+              <Text style={styles.attributionText}>
+                © OpenStreetMap contributors
+                {(() => {
+                  const extra = (Constants as any).expoConfig?.extra || (Constants as any).manifest?.extra || {};
+                  const styleURL = extra.MAP_STYLE_URL as string | undefined;
+                  const add = (extra.MAP_ATTRIBUTION as string) || ((styleURL || "").includes("geoapify.com") ? " · © Geoapify" : "");
+                  return add ? ` · ${add.replace(/^\s*·\s*/, "")}` : "";
+                })()}
+              </Text>
+            </View>
+          </MapLibreGL.MapView>
         </View>
 
         <View style={styles.controls}>
@@ -409,6 +429,16 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
+  attributionWrap: {
+    position: "absolute",
+    right: 8,
+    bottom: 6,
+    backgroundColor: "rgba(255,255,255,0.8)",
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  attributionText: { fontSize: 11, color: "#333" },
   controls: {
     gap: 12,
   },

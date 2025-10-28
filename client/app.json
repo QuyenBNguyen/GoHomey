@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "GoHomey",
+    "slug": "GoHomey",
+    "version": "1.0.0",
+    "orientation": "portrait",
+  "icon": "./assets/ic_logo.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/ic_logo.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#A993FF"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gohomey.app"
+      
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/ic_logo.png",
+        "backgroundColor": "#A993FF"
+      },
+      "package": "com.gohomey.app",
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/ic_logo.png"
+    },
+    "extra": {
+      "ORS_KEY": "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImNmNDUwZmNkMmNkNjQ2NTY4ODU2MDQwMDdhZTJhYWZiIiwiaCI6Im11cm11cjY0In0=",
+      "API_BASE_URL": "https://gohomey.me",
+  "MAP_STYLE_URL": "https://demotiles.maplibre.org/style.json",
+  "MAP_ATTRIBUTION": "© Geoapify",
+      "eas": {
+        "projectId": "05bdb806-08f7-4168-ad67-953fef274def"
+      }
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          },
+          "android": {
+            "enableProguardInReleaseBuilds": false,
+            "useCleartextTraffic": true
+          }
+        }
+      ]
+    ]
+  }
+}

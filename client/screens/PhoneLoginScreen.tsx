@@ -2,14 +2,18 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Button, StyleSheet, Alert, ActivityIndicator, SafeAreaView } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../navigation/navigation";
 import AppHeader from "../components/AppHeader";
 
 interface Props {
   navigation: any;
 }
 
+type Nav = NativeStackNavigationProp<RootStackParamList, "PhoneLogin">;
+
 export default function PhoneLoginScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<Nav>();
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -51,21 +55,16 @@ export default function PhoneLoginScreen() {
       Alert.alert("Error", "Please enter a phone number");
       return;
     }
-
-    // Format phone number for Vietnam
     const formattedPhone = formatVietnamesePhone(phone.trim());
-
-    setLoading(true);
-    try {
-      const confirmation = await sendOTPWithFirebase(formattedPhone);
-      Alert.alert("Success", "OTP sent successfully!");
-      navigation.navigate("VerifyCode", { confirmation, phoneNumber: formattedPhone });
-    } catch (error) {
-      console.error("Error sending OTP:", error);
-      Alert.alert("Error", "Failed to send OTP. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    // Phone login flow not yet wired to backend/VerifyCode screen; redirect users to Email login for now.
+    Alert.alert(
+      "Phone login unavailable",
+      `Phone OTP login isn't enabled in this build. Use Email login instead.\n\nEntered: ${formattedPhone}`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Go to Email Login", onPress: () => navigation.navigate("EmailLogin") },
+      ]
+    );
   };
 
   return (

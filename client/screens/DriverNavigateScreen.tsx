@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from "react-native";
-import MapView, { Marker, Polyline, Region } from "react-native-maps";
+import MapLibreGL from "@maplibre/maplibre-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRoute } from "@react-navigation/native";
 import { useSelector } from "react-redux";
 import { getRide, trackDriver, trackRoute } from "../api/rideApi";
 import { useLiveLocationUploader } from "../hooks/useLiveLocationUploader";
+import Constants from "expo-constants";
 
 type LatLng = { latitude: number; longitude: number };
 
@@ -75,10 +76,57 @@ export default function DriverNavigateScreen() {
     return () => { if (pollRef.current) clearTimeout(pollRef.current); };
   }, [rideId, token]);
 
-  const initialRegion: Region = useMemo(() => {
-    const center = pickup || dropoff || { latitude: 16.054407, longitude: 108.202164 };
-    return { latitude: center.latitude, longitude: center.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 };
+  // Map style URL from config (Geoapify/MapTiler/self-hosted), fallback to demo tiles
+  const styleURL =
+    ((Constants as any).expoConfig?.extra?.MAP_STYLE_URL as string) ||
+    ((Constants as any).manifest?.extra?.MAP_STYLE_URL as string) ||
+    "https://demotiles.maplibre.org/style.json";
+
+  const cameraCenter: LatLng = useMemo(() => {
+    return pickup || dropoff || { latitude: 16.054407, longitude: 108.202164 };
   }, [pickup, dropoff]);
+
+  // Build GeoJSON FeatureCollections for polylines
+  const toPickupGeo = useMemo(() => {
+    if (!toPickupCoords.length) return null;
+    return {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: {
+            type: "LineString",
+            coordinates: toPickupCoords.map((c) => [c.longitude, c.latitude]),
+          },
+          properties: {},
+        },
+      ],
+    } as const;
+  }, [toPickupCoords]);
+
+  const toDropoffGeo = useMemo(() => {
+    if (!toDropoffCoords.length) return null;
+    return {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: {
+            type: "LineString",
+            coordinates: toDropoffCoords.map((c) => [c.longitude, c.latitude]),
+          },
+          properties: {},
+        },
+      ],
+    } as const;
+  }, [toDropoffCoords]);
+
+  // No token required for MapLibre
+  // @ts-ignore
+  if (typeof MapLibreGL.setAccessToken === 'function') {
+    // @ts-ignore
+    MapLibreGL.setAccessToken(null);
+  }
 
   const customerName = customer ? `${customer.firstName ?? ""} ${customer.lastName ?? ""}`.trim() : "";
   const customerPhone = customer?.phone ?? "";
@@ -93,17 +141,57 @@ export default function DriverNavigateScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top", "left", "right"]}>
       <View style={styles.container}>
-        <MapView style={styles.map} initialRegion={initialRegion}>
-          {pickup && <Marker coordinate={pickup} title="Pickup" pinColor="#ff3b30" />}
-          {dropoff && <Marker coordinate={dropoff} title="Dropoff" pinColor="#007aff" />}
-          {driverLoc && <Marker coordinate={driverLoc} title="Me (Driver)" pinColor="#34c759" />}
-          {toPickupCoords.length > 0 && (
-            <Polyline coordinates={toPickupCoords} strokeWidth={3} strokeColor="#34c759" lineDashPattern={[8, 6]} />
+        {/* @ts-ignore styleURL prop is available at runtime */}
+        <MapLibreGL.MapView style={styles.map} styleURL={styleURL} logoEnabled={false} compassEnabled>
+          <MapLibreGL.Camera
+            zoomLevel={13}
+            centerCoordinate={[cameraCenter.longitude, cameraCenter.latitude]}
+          />
+
+          {pickup && (
+            // @ts-ignore
+            <MapLibreGL.PointAnnotation id="pickup" coordinate={[pickup.longitude, pickup.latitude]}>
+              <></>
+            </MapLibreGL.PointAnnotation>
           )}
-          {toDropoffCoords.length > 0 && (
-            <Polyline coordinates={toDropoffCoords} strokeWidth={4} strokeColor="#007aff" />
+          {dropoff && (
+            // @ts-ignore
+            <MapLibreGL.PointAnnotation id="dropoff" coordinate={[dropoff.longitude, dropoff.latitude]}>
+              <></>
+            </MapLibreGL.PointAnnotation>
           )}
-        </MapView>
+          {driverLoc && (
+            // @ts-ignore
+            <MapLibreGL.PointAnnotation id="driver" coordinate={[driverLoc.longitude, driverLoc.latitude]}>
+              <></>
+            </MapLibreGL.PointAnnotation>
+          )}
+
+          {toPickupGeo && (
+            // @ts-ignore
+            <MapLibreGL.ShapeSource id="to-pickup" shape={toPickupGeo}>
+              <MapLibreGL.LineLayer id="to-pickup-line" style={{ lineColor: "#34c759", lineWidth: 3, lineDasharray: [2, 2] }} />
+            </MapLibreGL.ShapeSource>
+          )}
+          {toDropoffGeo && (
+            // @ts-ignore
+            <MapLibreGL.ShapeSource id="to-dropoff" shape={toDropoffGeo}>
+              <MapLibreGL.LineLayer id="to-dropoff-line" style={{ lineColor: "#007aff", lineWidth: 4 }} />
+            </MapLibreGL.ShapeSource>
+          )}
+
+          {/* Attribution overlay */}
+          <View pointerEvents="none" style={styles.attributionWrap}>
+            <Text style={styles.attributionText}>
+              © OpenStreetMap contributors
+              {(() => {
+                const extra = (Constants as any).expoConfig?.extra || (Constants as any).manifest?.extra || {};
+                const add = (extra.MAP_ATTRIBUTION as string) || ((styleURL || "").includes("geoapify.com") ? " · © Geoapify" : "");
+                return add ? ` · ${add.replace(/^\s*·\s*/, "")}` : "";
+              })()}
+            </Text>
+          </View>
+        </MapLibreGL.MapView>
 
         {/* Bottom sheet: customer basic info + call */}
         <View style={styles.bottomSheet}>
@@ -130,6 +218,16 @@ export default function DriverNavigateScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
+  attributionWrap: {
+    position: "absolute",
+    right: 8,
+    bottom: 6,
+    backgroundColor: "rgba(255,255,255,0.8)",
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  attributionText: { fontSize: 11, color: "#333" },
   bottomSheet: {
     position: "absolute",
     bottom: 0,

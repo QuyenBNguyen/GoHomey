@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View, Text } from "react-native";
 import MapLibreGL from "@maplibre/maplibre-react-native";
 import { fetchRouteAPI, RouteData } from "../api/locationAPI";
+import Constants from "expo-constants";
 
 interface MapSectionProps {
   currentLocation: { latitude: number; longitude: number };
@@ -27,8 +28,11 @@ export default function MapSection({ currentLocation, homeLocation }: MapSection
     }
   }, [currentLocation, homeLocation]);
 
-  // 🔹 Map style: use MapLibre demo tiles by default; for production, switch to Geoapify/MapTiler style with your key
-  const styleURL = "https://demotiles.maplibre.org/style.json";
+  // Map style: prefer provider style URL from config; fallback to MapLibre demo tiles
+  const styleURL =
+    ((Constants as any).expoConfig?.extra?.MAP_STYLE_URL as string) ||
+    ((Constants as any).manifest?.extra?.MAP_STYLE_URL as string) ||
+    "https://demotiles.maplibre.org/style.json";
 
   // Center coordinate
   const center = currentLocation || homeLocation || { latitude: 16.054407, longitude: 108.202164 };
@@ -89,10 +93,32 @@ export default function MapSection({ currentLocation, homeLocation }: MapSection
           />
         </MapLibreGL.ShapeSource>
       )}
+
+      {/* Attribution overlay (required by OSM/providers) */}
+      <View pointerEvents="none" style={styles.attributionWrap}>
+        <Text style={styles.attributionText}>
+          © OpenStreetMap contributors
+          {(() => {
+            const extra = (Constants as any).expoConfig?.extra || (Constants as any).manifest?.extra || {};
+            const add = (extra.MAP_ATTRIBUTION as string) || ((styleURL || "").includes("geoapify.com") ? " · © Geoapify" : "");
+            return add ? ` · ${add.replace(/^\s*·\s*/, "")}` : "";
+          })()}
+        </Text>
+      </View>
     </MapLibreGL.MapView>
   );
 }
 
 const styles = StyleSheet.create({
   map: { flex: 1 },
+  attributionWrap: {
+    position: "absolute",
+    right: 8,
+    bottom: 6,
+    backgroundColor: "rgba(255,255,255,0.8)",
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  attributionText: { fontSize: 11, color: "#333" },
 });

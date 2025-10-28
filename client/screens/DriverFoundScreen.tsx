@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from "react-native";
-import MapView, { Marker, Polyline, Region } from "react-native-maps";
+import MapLibreGL from "@maplibre/maplibre-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRoute } from "@react-navigation/native";
 import { useSelector } from "react-redux";
 import { getRide, trackRoute } from "../api/rideApi";
 import { useDriverRoutePolling } from "../hooks/useDriverRoutePolling";
 import { fetchCurrentLocationAPI, updateCurrentLocationAPI } from "../api/locationAPI";
+import Constants from "expo-constants";
 
 type LatLng = { latitude: number; longitude: number };
 
@@ -119,15 +120,48 @@ const DriverFoundScreen: React.FC = () => {
     };
   }, [token]);
 
-  const initialRegion: Region = useMemo(() => {
-    const center = pickup || dropoff || { latitude: 16.054407, longitude: 108.202164 };
-    return {
-      latitude: center.latitude,
-      longitude: center.longitude,
-      latitudeDelta: 0.05,
-      longitudeDelta: 0.05,
-    };
+  const styleURL =
+    ((Constants as any).expoConfig?.extra?.MAP_STYLE_URL as string) ||
+    ((Constants as any).manifest?.extra?.MAP_STYLE_URL as string) ||
+    "https://demotiles.maplibre.org/style.json";
+
+  const cameraCenter: LatLng = useMemo(() => {
+    return pickup || dropoff || { latitude: 16.054407, longitude: 108.202164 };
   }, [pickup, dropoff]);
+
+  const toPickupGeo = useMemo(() => {
+    if (!toPickupCoords.length) return null;
+    return {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: { type: "LineString", coordinates: toPickupCoords.map((c) => [c.longitude, c.latitude]) },
+          properties: {},
+        },
+      ],
+    } as const;
+  }, [toPickupCoords]);
+
+  const routeGeo = useMemo(() => {
+    if (!routeCoords.length) return null;
+    return {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: { type: "LineString", coordinates: routeCoords.map((c) => [c.longitude, c.latitude]) },
+          properties: {},
+        },
+      ],
+    } as const;
+  }, [routeCoords]);
+
+  // @ts-ignore
+  if (typeof MapLibreGL.setAccessToken === 'function') {
+    // @ts-ignore
+    MapLibreGL.setAccessToken(null);
+  }
 
   // Derive customer current marker as first point of the route, if available
   const customerLive: LatLng | null = useMemo(() => {
@@ -165,23 +199,60 @@ const DriverFoundScreen: React.FC = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top", "left", "right"]}>
       <View style={styles.container}>
-        <MapView style={styles.map} initialRegion={initialRegion}>
-          {pickup && <Marker coordinate={pickup} title="Pickup" pinColor="#ff3b30" />}
-          {dropoff && <Marker coordinate={dropoff} title="Home" pinColor="#007aff" />}
-          {driverLoc && <Marker coordinate={driverLoc} title="Driver" pinColor="#34c759" />}
-          {customerLive && <Marker coordinate={customerLive} title="You" pinColor="#ff9f0a" />}
-          {routeCoords.length > 0 && (
-            <Polyline coordinates={routeCoords} strokeWidth={4} strokeColor="#007aff" />
+        {/* @ts-ignore styleURL prop available at runtime */}
+        <MapLibreGL.MapView style={styles.map} styleURL={styleURL} logoEnabled={false} compassEnabled>
+          <MapLibreGL.Camera zoomLevel={13} centerCoordinate={[cameraCenter.longitude, cameraCenter.latitude]} />
+
+          {pickup && (
+            // @ts-ignore
+            <MapLibreGL.PointAnnotation id="pickup" coordinate={[pickup.longitude, pickup.latitude]}>
+              <></>
+            </MapLibreGL.PointAnnotation>
           )}
-          {toPickupCoords.length > 0 && (
-            <Polyline
-              coordinates={toPickupCoords}
-              strokeWidth={3}
-              strokeColor="#34c759"
-              lineDashPattern={[8, 6]}
-            />
+          {dropoff && (
+            // @ts-ignore
+            <MapLibreGL.PointAnnotation id="dropoff" coordinate={[dropoff.longitude, dropoff.latitude]}>
+              <></>
+            </MapLibreGL.PointAnnotation>
           )}
-        </MapView>
+          {driverLoc && (
+            // @ts-ignore
+            <MapLibreGL.PointAnnotation id="driver" coordinate={[driverLoc.longitude, driverLoc.latitude]}>
+              <></>
+            </MapLibreGL.PointAnnotation>
+          )}
+          {customerLive && (
+            // @ts-ignore
+            <MapLibreGL.PointAnnotation id="customer" coordinate={[customerLive.longitude, customerLive.latitude]}>
+              <></>
+            </MapLibreGL.PointAnnotation>
+          )}
+
+          {routeGeo && (
+            // @ts-ignore
+            <MapLibreGL.ShapeSource id="route" shape={routeGeo}>
+              <MapLibreGL.LineLayer id="route-line" style={{ lineColor: "#007aff", lineWidth: 4 }} />
+            </MapLibreGL.ShapeSource>
+          )}
+          {toPickupGeo && (
+            // @ts-ignore
+            <MapLibreGL.ShapeSource id="to-pickup" shape={toPickupGeo}>
+              <MapLibreGL.LineLayer id="to-pickup-line" style={{ lineColor: "#34c759", lineWidth: 3, lineDasharray: [2, 2] }} />
+            </MapLibreGL.ShapeSource>
+          )}
+
+          {/* Attribution overlay */}
+          <View pointerEvents="none" style={styles.attributionWrap}>
+            <Text style={styles.attributionText}>
+              © OpenStreetMap contributors
+              {(() => {
+                const extra = (Constants as any).expoConfig?.extra || (Constants as any).manifest?.extra || {};
+                const add = (extra.MAP_ATTRIBUTION as string) || ((styleURL || "").includes("geoapify.com") ? " · © Geoapify" : "");
+                return add ? ` · ${add.replace(/^\s*·\s*/, "")}` : "";
+              })()}
+            </Text>
+          </View>
+        </MapLibreGL.MapView>
 
         <View style={styles.bottomSheet}>
           <Text style={styles.sheetTitle}>Driver on the way</Text>
@@ -226,6 +297,16 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
+  attributionWrap: {
+    position: "absolute",
+    right: 8,
+    bottom: 6,
+    backgroundColor: "rgba(255,255,255,0.8)",
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  attributionText: { fontSize: 11, color: "#333" },
   bottomSheet: {
     position: "absolute",
     bottom: 0,
