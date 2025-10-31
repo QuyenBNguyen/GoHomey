@@ -2,7 +2,7 @@
   "expo": {
     "name": "GoHomey",
     "slug": "GoHomey",
-    "version": "1.0.0",
+  "version": "0.2.3",
     "orientation": "portrait",
   "icon": "./assets/ic_logo.png",
     "userInterfaceStyle": "light",
@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/ic_logo.png",
       "resizeMode": "cover",
-      "backgroundColor": "#A993FF"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": true,
@@ -21,7 +21,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/ic_logo.png",
-        "backgroundColor": "#A993FF"
+        "backgroundColor": "#FFFFFF"
       },
       "package": "com.gohomey.app",
       "edgeToEdgeEnabled": true

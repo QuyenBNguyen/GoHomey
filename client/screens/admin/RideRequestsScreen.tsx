@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#F5F3FF",
+    borderBottomColor: "#EFEFEF",
   },
   headerTitle: { fontSize: 20, fontWeight: "600", color: "#000" },
   list: { padding: 16, gap: 12 },
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   metaText: { color: "#6B7280", fontSize: 12 },
   acceptBtn: {
     marginTop: 12,
-    backgroundColor: "#4A3AFF",
+    backgroundColor: "#FF7A00",
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: "center",

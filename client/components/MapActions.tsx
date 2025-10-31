@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   btn: {
-    backgroundColor: "#4A3AFF",
+    backgroundColor: "#FF7A00",
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 10,

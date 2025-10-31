@@ -35,11 +35,11 @@ export default function DriverDashboard() {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Driver Dashboard</Text>
           <TouchableOpacity style={styles.profileBtn} onPress={handleProfilePress}>
-            <Ionicons name="person-circle" size={40} color="#4A3AFF" />
+            <Ionicons name="person-circle" size={40} color="#FF7A00" />
           </TouchableOpacity>
         </View>
         <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color="#4A3AFF" />
+          <ActivityIndicator size="large" color="#FF7A00" />
           <Text style={styles.loadingText}>Loading dashboard...</Text>
         </View>
       </SafeAreaView>
@@ -52,7 +52,7 @@ export default function DriverDashboard() {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Driver Dashboard</Text>
           <TouchableOpacity style={styles.profileBtn} onPress={handleProfilePress}>
-            <Ionicons name="person-circle" size={40} color="#4A3AFF" />
+            <Ionicons name="person-circle" size={40} color="#FF7A00" />
           </TouchableOpacity>
         </View>
         <View style={styles.centerContent}>
@@ -74,7 +74,7 @@ export default function DriverDashboard() {
             <Ionicons name="notifications-outline" size={24} color="#000" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.profileBtn} onPress={handleProfilePress}>
-            <Ionicons name="person-circle" size={32} color="#B19EFF" />
+            <Ionicons name="person-circle" size={32} color="#FF7A00" />
           </TouchableOpacity>
         </View>
       </View>
@@ -91,7 +91,7 @@ export default function DriverDashboard() {
           <View style={styles.topRow}>
             <View style={styles.statCard}>
               <View style={styles.statHeader}>
-                <Ionicons name="car" size={20} color="#B19EFF" />
+                <Ionicons name="car" size={20} color="#FF7A00" />
                 <Text style={styles.statLabel}>Rides</Text>
               </View>
               <Text style={styles.statValue}>{dailySummary?.totalRides ?? "0"}</Text>
@@ -99,7 +99,7 @@ export default function DriverDashboard() {
 
             <View style={styles.statCard}>
               <View style={styles.statHeader}>
-                <Ionicons name="star" size={20} color="#B19EFF" />
+                <Ionicons name="star" size={20} color="#FF7A00" />
                 <Text style={styles.statLabel}>Rating</Text>
               </View>
               <Text style={styles.statValue}>
@@ -110,7 +110,7 @@ export default function DriverDashboard() {
 
           <View style={[styles.statCard, styles.fullWidth]}>
             <View style={styles.statHeader}>
-              <Ionicons name="wallet" size={20} color="#B19EFF" />
+              <Ionicons name="wallet" size={20} color="#FF7A00" />
               <Text style={styles.statLabel}>Earnings</Text>
             </View>
             <Text style={styles.statValue}>
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#F5F3FF",
+    borderBottomColor: "#EFEFEF",
   },
   headerTitle: {
     fontSize: 24,
@@ -194,8 +194,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: "#F5F3FF",
-    shadowColor: "#B19EFF",
+    borderColor: "#EFEFEF",
+    shadowColor: "#FF7A00",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,

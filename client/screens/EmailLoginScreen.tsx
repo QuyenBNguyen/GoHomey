@@ -158,14 +158,14 @@ const styles = StyleSheet.create({
   },
   eyeBtn: { padding: 10, marginLeft: 4 },
   registerText: {
-    color: "#4A4A4A",
+    color: "#E65C00",
     textAlign: "center",
     marginVertical: 12,
     textDecorationLine: "underline",
     padding: 10,
   },
   nextBtn: {
-    backgroundColor: "#A993FF",
+    backgroundColor: "#FF7A00",
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: "center",

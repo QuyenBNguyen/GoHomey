@@ -66,7 +66,7 @@ export default function MapSection({ currentLocation, homeLocation }: MapSection
     // @ts-ignore styleURL is supported in runtime; types may vary between versions
     <MapLibreGL.MapView style={styles.map} styleURL={styleURL} logoEnabled={false} compassEnabled>
       <MapLibreGL.Camera
-        zoomLevel={13}
+        zoomLevel={15}
         centerCoordinate={[center.longitude, center.latitude]}
       />
 
@@ -105,6 +105,19 @@ export default function MapSection({ currentLocation, homeLocation }: MapSection
           })()}
         </Text>
       </View>
+
+      {/* Optional debug badge to verify active style URL at runtime */}
+      {(() => {
+        const extra = (Constants as any).expoConfig?.extra || (Constants as any).manifest?.extra || {};
+        if (String(extra.SHOW_STYLE_BADGE || "") === "1") {
+          return (
+            <View pointerEvents="none" style={styles.badge}>
+              <Text style={styles.badgeText}>{(styleURL || "").replace(/^https?:\/\//, "")}</Text>
+            </View>
+          );
+        }
+        return null;
+      })()}
     </MapLibreGL.MapView>
   );
 }
@@ -121,4 +134,14 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   attributionText: { fontSize: 11, color: "#333" },
+  badge: {
+    position: "absolute",
+    left: 8,
+    top: 8,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  badgeText: { fontSize: 10, color: "#fff" },
 });

@@ -28,7 +28,7 @@ export default function AppHeader({ onBack, showBack = true, title }: Props) {
       <View style={styles.left}>
         {showBack && (
           <TouchableOpacity onPress={onBack} style={styles.backBtn} accessibilityLabel="Back">
-            <Ionicons name="chevron-back" size={28} color="#000" />
+            <Ionicons name="chevron-back" size={28} color="#fff" />
           </TouchableOpacity>
         )}
 
@@ -51,7 +51,7 @@ export default function AppHeader({ onBack, showBack = true, title }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#BE9AFCFF",
+    backgroundColor: "#FF7A00",
     width: "100%",
     paddingHorizontal: 16,
     flexDirection: "row",
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 18,
     fontWeight: "700",
-    color: "#000",
+    color: "#fff",
   },
   backBtn: {
     padding: 8,
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#000",
+    color: "#fff",
     marginRight: 8,
   },
 });

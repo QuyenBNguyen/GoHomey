@@ -167,7 +167,7 @@ export default function VerifyCodeScreen({ route }: any) {
         <TouchableOpacity onPress={resendCode} disabled={loading || resendCooldown > 0}>
           <Text style={styles.resendText}>
             Haven’t received?{" "}
-            <Text style={{ color: "#4A3AFF", fontWeight: "bold" }}>
+            <Text style={{ color: "#E65C00", fontWeight: "bold" }}>
               {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : "Resend"}
             </Text>
           </Text>
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   verifyBtn: {
-    backgroundColor: "#4A3AFF",
+    backgroundColor: "#FF7A00",
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: "center",

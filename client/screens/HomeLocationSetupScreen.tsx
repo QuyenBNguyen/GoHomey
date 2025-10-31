@@ -285,7 +285,7 @@ export default function HomeLocationSetupScreen({ navigation, route }: Props) {
 
         {loading && (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#A993FF" />
+            <ActivityIndicator size="large" color="#FF7A00" />
             <Text style={styles.loadingText}>Getting your location...</Text>
           </View>
         )}
@@ -295,7 +295,7 @@ export default function HomeLocationSetupScreen({ navigation, route }: Props) {
           {/* @ts-ignore styleURL supported at runtime */}
           <MapLibreGL.MapView style={styles.map} styleURL={(((Constants as any).expoConfig?.extra?.MAP_STYLE_URL) || ((Constants as any).manifest?.extra?.MAP_STYLE_URL) || "https://demotiles.maplibre.org/style.json") as string} logoEnabled={false} compassEnabled onPress={handleMapPress}>
             <MapLibreGL.Camera
-              zoomLevel={Math.max(1, 14 - Math.log2(Math.max(mapRegion.latitudeDelta, mapRegion.longitudeDelta) / 0.01))}
+              zoomLevel={Math.max(1, 15 - Math.log2(Math.max(mapRegion.latitudeDelta, mapRegion.longitudeDelta) / 0.01))}
               centerCoordinate={[mapRegion.longitude, mapRegion.latitude]}
             />
             {/* Show current user location */}
@@ -331,7 +331,7 @@ export default function HomeLocationSetupScreen({ navigation, route }: Props) {
             onPress={handleUseCurrentLocation}
             disabled={!location || loading}
           >
-            <Ionicons name="locate" size={20} color="#A993FF" />
+            <Ionicons name="locate" size={20} color="#FF7A00" />
             <Text style={styles.useCurrentText}>Use Current Location</Text>
           </TouchableOpacity>
 
@@ -452,13 +452,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: "#A993FF",
+    borderColor: "#FF7A00",
     borderRadius: 8,
-    backgroundColor: "#f8f6ff",
+    backgroundColor: "#FFF7ED",
   },
   useCurrentText: {
     marginLeft: 8,
-    color: "#A993FF",
+    color: "#E65C00",
     fontWeight: "500",
   },
   addressContainer: {
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   confirmBtn: {
-    backgroundColor: "#A993FF",
+    backgroundColor: "#FF7A00",
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",

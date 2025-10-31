@@ -145,7 +145,7 @@ export default function DriverNavigateScreen() {
         {/* @ts-ignore styleURL prop is available at runtime */}
         <MapLibreGL.MapView style={styles.map} styleURL={styleURL} logoEnabled={false} compassEnabled>
           <MapLibreGL.Camera
-            zoomLevel={13}
+            zoomLevel={15}
             centerCoordinate={[cameraCenter.longitude, cameraCenter.latitude]}
           />
 
@@ -252,6 +252,6 @@ const styles = StyleSheet.create({
   avatarText: { textAlign: "center", lineHeight: 48, fontWeight: "700", color: "#444" },
   personName: { fontSize: 16, fontWeight: "600" },
   personMeta: { color: "#666", marginTop: 2 },
-  callBtn: { backgroundColor: "#34c759", paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8 },
+  callBtn: { backgroundColor: "#FF7A00", paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8 },
   callText: { color: "#fff", fontWeight: "600" },
 });

@@ -104,7 +104,7 @@ const FindingDriverScreen: React.FC<Props> = ({ navigation, route }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Finding a driver near you...</Text>
-      {loading && <ActivityIndicator size="large" color="#000000FF" style={{ marginTop: 20 }} />}
+  {loading && <ActivityIndicator size="large" color="#FF7A00" style={{ marginTop: 20 }} />} 
       {error && <Text style={{ color: "red", marginTop: 20 }}>{error}</Text>}
     </View>
   );
@@ -115,7 +115,7 @@ export default FindingDriverScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#D6BEFFFF",
+    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,

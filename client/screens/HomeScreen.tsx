@@ -215,7 +215,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#D6BEFFFF",
+    backgroundColor: "#FFFFFF",
     padding: 16,
   },
   searchRow: {
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   },
   searchIcon: { marginLeft: -35 },
   goHomeBtn: {
-    backgroundColor: "#000000FF",
+    backgroundColor: "#FF7A00",
     paddingVertical: 18,
     borderRadius: 12,
     alignItems: "center",
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   quickItem: {
     alignItems: "center",
     flex: 1,
-    backgroundColor: "#BE9AFCFF",
+    backgroundColor: "#FFF3E6",
     marginHorizontal: 5,
     paddingVertical: 15,
     borderRadius: 20,
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#BE9AFCFF",
+    backgroundColor: "#FFF3E6",
     paddingVertical: 20,
     paddingHorizontal: 12,
     borderRadius: 10,

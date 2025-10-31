@@ -31,14 +31,14 @@ const Splash = ({ onFinish }: { onFinish: () => void }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#A993FF", 
+    backgroundColor: "#FFFFFF", 
     justifyContent: "center",
     alignItems: "center",
   },
   logo: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "white",
+    color: "#FF7A00",
   },
 });
 

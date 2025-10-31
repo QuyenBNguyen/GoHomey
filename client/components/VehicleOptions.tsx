@@ -74,7 +74,7 @@ export default function VehicleOptions({ onConfirm, distance, duration, formatte
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#A77AF3" />
+          <ActivityIndicator size="large" color="#FF7A00" />
           <Text style={styles.loadingText}>Loading prices...</Text>
         </View>
       ) : error ? (
@@ -169,9 +169,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   selected: {
-    borderColor: "#A77AF3",
+    borderColor: "#FF7A00",
     borderWidth: 2,
-    backgroundColor: "#EDE3FF",
+    backgroundColor: "#FFF3E6",
   },
   optionContent: {
     flex: 1,
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   confirmBtn: {
-    backgroundColor: "#A77AF3",
+    backgroundColor: "#FF7A00",
     padding: 16,
     borderRadius: 12,
     alignItems: "center",
