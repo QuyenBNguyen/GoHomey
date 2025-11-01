@@ -146,5 +146,6 @@ vehicleType.json
 .expo/README.md
 .expo/settings.json
 client/app.config.js
+client/.env
 client/README.md
 server/README.MD
