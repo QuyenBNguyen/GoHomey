@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const Transaction = require("../models/transaction");
 const Ride = require("../models/ride");
+const User = require("../models/user");
 
 function sortObject(obj) {
   const sorted = {};
@@ -146,5 +147,142 @@ exports.getTransactionStatus = async (req, res) => {
     res.json({ status: tx.status, tx });
   } catch (err) {
     res.status(500).json({ message: "Error fetching status" });
+  }
+};
+
+// ============ VietQR ============
+// We use https://img.vietqr.io to render a static QR image without API keys.
+// Configure your bank and account via environment variables.
+// Required env:
+//  - VIETQR_BANK_BIN (e.g., 970415 for TPBank)
+//  - VIETQR_ACCOUNT_NO (destination account number)
+//  - VIETQR_ACCOUNT_NAME (account holder for display)
+//  - VIETQR_TEMPLATE (optional: "qr_only" | "compact2" | "compact" | default "qr_only")
+
+function buildVietQrUrl({ bankBin, accountNo, amount, addInfo, accountName, template = "qr_only" }) {
+  const base = `https://img.vietqr.io/image/${bankBin}-${accountNo}-${template}.png`;
+  const params = new URLSearchParams();
+  if (amount && amount > 0) params.set("amount", String(Math.round(amount)));
+  if (addInfo) params.set("addInfo", addInfo);
+  if (accountName) params.set("accountName", accountName);
+  return `${base}?${params.toString()}`;
+}
+
+exports.createVietqr = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { rideId } = req.body || {};
+    if (!rideId) return res.status(400).json({ message: "rideId required" });
+
+    const ride = await Ride.findById(rideId).populate("vehicleTypeId");
+    if (!ride) return res.status(404).json({ message: "Ride not found" });
+
+    // Derive info strings
+    const driver = ride.driverId ? await User.findById(ride.driverId) : null;
+    const driverName = driver ? `${driver.firstName || ""} ${driver.lastName || ""}`.trim() : "";
+    const vehicle = ride.vehicleTypeId ? ride.vehicleTypeId.type || ride.vehicleTypeId.name || "Vehicle" : "Vehicle";
+    const amountVnd = Math.max(0, Math.round(ride.price || 0));
+    const tripLengthKm = typeof ride.distance === "number" ? ride.distance : undefined;
+
+    // Build addInfo for bank statement (keep concise and ASCII)
+    const shortRideId = String(rideId).slice(-6);
+    const addInfo = `GoHomey ${shortRideId}`; // Keep it short to fit bank limits
+
+    const bankBin = process.env.VIETQR_BANK_BIN;
+    const accountNo = process.env.VIETQR_ACCOUNT_NO;
+    const accountName = process.env.VIETQR_ACCOUNT_NAME;
+    const template = process.env.VIETQR_TEMPLATE || "qr_only";
+
+    if (!bankBin || !accountNo || !accountName) {
+      return res.status(500).json({
+        message: "VietQR not configured. Please set VIETQR_BANK_BIN, VIETQR_ACCOUNT_NO, VIETQR_ACCOUNT_NAME",
+      });
+    }
+
+    const qrUrl = buildVietQrUrl({ bankBin, accountNo, amount: amountVnd, addInfo, accountName, template });
+
+    const orderId = `${rideId}-${Date.now()}`;
+    const tx = await Transaction.create({
+      rideId: ride._id,
+      customerId: ride.customerId,
+      driverId: ride.driverId,
+      amount: amountVnd,
+      currency: "VND",
+      method: "VietQR",
+      provider: "vietqr",
+      status: "Pending",
+      orderId,
+      bankBin,
+      accountNo,
+      accountName,
+      addInfo,
+      qrUrl,
+      vehicle,
+      driverName,
+      tripLengthKm,
+    });
+
+    res.status(201).json({
+      transactionId: tx._id,
+      orderId,
+      amount: amountVnd,
+      currency: "VND",
+      qrUrl,
+      meta: { vehicle, driverName, tripLengthKm, addInfo, bankBin, accountNo, accountName },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to create VietQR" });
+  }
+};
+
+exports.getTransactionById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const tx = await Transaction.findById(id);
+    if (!tx) return res.status(404).json({ message: "Not found" });
+    res.json(tx);
+  } catch (err) {
+    res.status(500).json({ message: "Error" });
+  }
+};
+
+async function completeRideIfNeeded(tx) {
+  if (tx && String(tx.status) === "Paid" && tx.rideId) {
+    await Ride.findByIdAndUpdate(tx.rideId, { status: "Completed" });
+  }
+}
+
+exports.markPaidCash = async (req, res) => {
+  try {
+    const { id } = req.params; // transaction id
+    const tx = await Transaction.findById(id);
+    if (!tx) return res.status(404).json({ message: "Transaction not found" });
+
+    tx.method = "Cash";
+    tx.provider = "cash";
+    tx.status = "Paid";
+    await tx.save();
+    await completeRideIfNeeded(tx);
+    res.json({ message: "Marked as paid (cash)", tx });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to mark cash" });
+  }
+};
+
+exports.markPaidTransfer = async (req, res) => {
+  try {
+    const { id } = req.params; // transaction id
+    const tx = await Transaction.findById(id);
+    if (!tx) return res.status(404).json({ message: "Transaction not found" });
+    // Note: In real systems, verify bank statement/amount before marking paid
+    tx.status = "Paid";
+    await tx.save();
+    await completeRideIfNeeded(tx);
+    res.json({ message: "Marked as paid (transfer)", tx });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to mark transfer" });
   }
 };

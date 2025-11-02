@@ -16,6 +16,7 @@ import MapScreen from "./screens/MapScreen";
 import FindingDriverScreen from "./screens/FindingDriverScreen";
 import DriverFoundScreen from "./screens/DriverFoundScreen";
 import DriverNavigateScreen from "./screens/DriverNavigateScreen";
+import DriverPaymentScreen from "./screens/DriverPaymentScreen";
 import DriverDashboard from "./screens/admin/DriverDashboard";
 import RideRequestsScreen from "./screens/admin/RideRequestsScreen";
 import HomeLocationSetupScreen from "./screens/HomeLocationSetupScreen";
@@ -72,6 +73,7 @@ export default function App() {
               <Stack.Screen name="FindingDriver" component={FindingDriverScreen} />
               <Stack.Screen name="DriverFound" component={DriverFoundScreen} />
               <Stack.Screen name="DriverNavigate" component={DriverNavigateScreen} />
+              <Stack.Screen name="DriverPayment" component={DriverPaymentScreen} />
               <Stack.Screen name="DriverDashboard" component={DriverDashboard} />
               <Stack.Screen name="RideRequests" component={RideRequestsScreen} />
             </>

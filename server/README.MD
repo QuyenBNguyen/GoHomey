@@ -21,6 +21,7 @@ Authentication: JWT (Authorization: Bearer <token>) for protected endpoints.
 - /users → userRoutes
 - /drivers → driverRoutes
 - /user-details → userDetailRoutes
+- /payments → paymentRoutes
 
 Note: Both traditional auth and phone OTP are mounted under /auth.
 
@@ -101,6 +102,31 @@ Matching
  - LOG_PING=true to log ping/diag requests to console
  - The server sets `trust proxy` to correctly detect HTTPS behind proxies (e.g., Render)
 1. Map Comp:
+ 
+## Payments
+
+VNPay integration exists for compatibility, but the default flow uses VietQR (bank transfer) or cash at drop-off.
+
+Endpoints (JWT required unless noted):
+
+- POST /payments/vietqr/create — create a pending transaction and return a static VietQR image URL
+  - Body: { rideId: string }
+  - Response: { transactionId, orderId, amount, currency, qrUrl, meta }
+- GET /payments/transactions/:id — get transaction by id
+- POST /payments/transactions/:id/paid-cash — mark transaction as paid by cash (Driver/Admin)
+- POST /payments/transactions/:id/paid-transfer — mark transaction as paid by bank transfer (Driver/Admin)
+- GET /payments/transactions/:orderId/status — get status by orderId
+
+Environment variables for VietQR image rendering (required):
+
+- VIETQR_BANK_BIN — Bank BIN code (e.g., 970415)
+- VIETQR_ACCOUNT_NO — Destination account number
+- VIETQR_ACCOUNT_NAME — Account holder name (for display)
+- VIETQR_TEMPLATE — Optional: qr_only | compact | compact2 (default: qr_only)
+
+Notes:
+- VietQR is a static bank transfer QR. There is no IPN callback — driver confirms receipt and marks the transaction paid.
+- When a transaction is marked Paid, the related ride is automatically set to Completed.
     - Display: react-native-maps + OSM
     - Routing: OpenRouteService API
     - GPS: expo-location

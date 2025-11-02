@@ -13,6 +13,7 @@ export type RootStackParamList = {
   DriverFound: { ride?: any; driver?: any; rideId?: string } | undefined;
   FindingDriver: { rideId?: any; drivers?: any[]; pickup?: { lat: number; lng: number }; vehicleTypeId?: string } | undefined;
   DriverNavigate: { rideId: string } | undefined;
+  DriverPayment: { rideId: string; transactionId?: string; amount?: number; qrUrl?: string } | undefined;
   DriverDashboard: undefined;
   RideRequests: undefined;
   DriverDrawer: undefined;

@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Linking } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Linking, Alert } from "react-native";
 import MapLibreGL from "@maplibre/maplibre-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapActions from "../components/MapActions";
-import { useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { createVietqr } from "../api/paymentApi";
 import { useSelector } from "react-redux";
 import { getRide, trackDriver, trackRoute } from "../api/rideApi";
 import { useLiveLocationUploader } from "../hooks/useLiveLocationUploader";
@@ -15,6 +16,7 @@ const POLL_MS = 3000;
 
 export default function DriverNavigateScreen() {
   const route = useRoute<any>();
+  const navigation = useNavigation<any>();
   const rideId: string | undefined = route?.params?.rideId;
   const { token, user } = useSelector((s: any) => s.auth) as { token?: string; user?: { id: string } };
 
@@ -139,6 +141,16 @@ export default function DriverNavigateScreen() {
     .slice(0, 2)
     .toUpperCase();
 
+  const onProceedPayment = async () => {
+    if (!rideId || !token) return;
+    try {
+      const r = await createVietqr(rideId, token);
+      navigation.navigate("DriverPayment", { rideId, transactionId: r.transactionId, amount: r.amount, qrUrl: r.qrUrl });
+    } catch (e: any) {
+      Alert.alert("Payment", e?.message || "Failed to create payment");
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top", "left", "right"]}>
       <View style={styles.container}>
@@ -197,7 +209,7 @@ export default function DriverNavigateScreen() {
   {/* Quick actions: update my location + return */}
   <MapActions position={{ right: 12, bottom: 120 }} />
 
-        {/* Bottom sheet: customer basic info + call */}
+        {/* Bottom sheet: customer basic info + call + proceed to payment */}
         <View style={styles.bottomSheet}>
           <Text style={styles.sheetTitle}>Navigate to customer / destination</Text>
           <View style={styles.personRow}>
@@ -213,6 +225,10 @@ export default function DriverNavigateScreen() {
               </TouchableOpacity>
             )}
           </View>
+
+          <TouchableOpacity style={styles.payBtn} onPress={onProceedPayment}>
+            <Text style={styles.payText}>Proceed to payment</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -254,4 +270,6 @@ const styles = StyleSheet.create({
   personMeta: { color: "#666", marginTop: 2 },
   callBtn: { backgroundColor: "#FF7A00", paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8 },
   callText: { color: "#fff", fontWeight: "600" },
+  payBtn: { marginTop: 14, backgroundColor: "#34C759", paddingVertical: 14, borderRadius: 10, alignItems: "center" },
+  payText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });
